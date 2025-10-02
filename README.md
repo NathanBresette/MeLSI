@@ -40,9 +40,13 @@ MeLSI is an R package that can be run from R or sourced directly.
 
 ### Install from GitHub
 
-The latest version of MeLSI can be installed from GitHub:
+The latest version of MeLSI can be installed from GitHub using devtools:
 
 ```r
+# Install devtools if not already installed
+if (!require("devtools", quietly = TRUE))
+    install.packages("devtools")
+
 # Install required packages first
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -53,8 +57,11 @@ BiocManager::install(c("phyloseq", "microbiome"))
 # Install CRAN packages
 install.packages(c("vegan", "ggplot2", "dplyr", "GUniFrac"))
 
-# Source MeLSI functions directly
-source("R/melsi_robust.R")
+# Install MeLSI from GitHub
+devtools::install_github("NathanBresette/MeLSI")
+
+# Load the package
+library(MeLSI)
 ```
 
 ## Running MeLSI
@@ -98,8 +105,8 @@ MeLSI generates several types of output:
 Example analysis can be found in the `R/` folder. The following code demonstrates basic MeLSI usage:
 
 ```r
-# Source MeLSI functions
-source("R/melsi_robust.R")
+# Load MeLSI package
+library(MeLSI)
 
 # Generate synthetic microbiome data
 test_data <- generate_test_data(n_samples = 60, n_taxa = 100, n_signal_taxa = 10)

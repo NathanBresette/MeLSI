@@ -23,5 +23,6 @@ Suggests:
     testthat,
     knitr,
     rmarkdown,
-    BiocManager
+    BiocManager,
+    devtools
 VignetteBuilder: knitr
