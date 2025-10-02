@@ -1,0 +1,280 @@
+---
+title: "MeLSI Tutorial: Basic Usage and Examples"
+author: "Nathan Bresette"
+date: "`r Sys.Date()`"
+output: html_document
+vignette: >
+  %\VignetteIndexEntry{MeLSI Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# MeLSI Tutorial
+
+This tutorial provides a comprehensive introduction to MeLSI (Metric Learning for Statistical Inference) for microbiome data analysis.
+
+## Introduction
+
+MeLSI is a novel machine learning method that learns optimal distance metrics to improve statistical power in detecting group differences in microbiome data. Unlike traditional distance metrics (Bray-Curtis, Euclidean, Jaccard), MeLSI adapts to the specific characteristics of your dataset.
+
+## Installation and Setup
+
+```{r install, eval=FALSE}
+# Install required packages
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install(c("phyloseq", "microbiome"))
+install.packages(c("vegan", "ggplot2", "dplyr", "GUniFrac"))
+
+# Source MeLSI functions
+source("R/melsi_robust.R")
+```
+
+## Basic Usage
+
+### Step 1: Prepare Your Data
+
+```{r basic_setup}
+# Load required packages
+library(vegan)
+library(ggplot2)
+
+# Source MeLSI functions (adjust path as needed)
+# source("R/melsi_robust.R")
+
+# Generate synthetic microbiome data for demonstration
+set.seed(42)
+test_data <- generate_test_data(n_samples = 60, n_taxa = 100, n_signal_taxa = 10)
+X <- test_data$counts
+y <- test_data$metadata$Group
+
+# Display data dimensions
+cat("Data dimensions:", nrow(X), "samples x", ncol(X), "taxa\n")
+cat("Groups:", paste(unique(y), collapse = ", "), "\n")
+```
+
+### Step 2: Data Preprocessing
+
+```{r preprocessing}
+# CLR transformation (recommended for microbiome data)
+X_clr <- X
+X_clr[X_clr == 0] <- 1e-10  # Handle zeros
+X_clr <- log(X_clr)         # Log transform
+X_clr <- X_clr - rowMeans(X_clr)  # Center by row means
+
+# Display preprocessing results
+cat("CLR transformation completed\n")
+cat("Data range:", round(range(X_clr), 3), "\n")
+```
+
+### Step 3: Run MeLSI Analysis
+
+```{r run_melsi}
+# Run MeLSI with default parameters
+cat("Running MeLSI analysis...\n")
+melsi_results <- run_melsi_permutation_test(
+    X_clr, y, 
+    n_perms = 99,    # Number of permutations
+    B = 50,          # Number of weak learners
+    m_frac = 0.7,    # Fraction of features per learner
+    show_progress = TRUE
+)
+
+# Display results
+cat("\nMeLSI Results:\n")
+cat(sprintf("F-statistic: %.4f\n", melsi_results$F_observed))
+cat(sprintf("P-value: %.4f\n", melsi_results$p_value))
+cat(sprintf("Significant: %s\n", ifelse(melsi_results$p_value < 0.05, "Yes", "No")))
+```
+
+## Comparison with Standard Methods
+
+```{r comparison}
+# Compare with Euclidean distance
+dist_euclidean <- dist(X_clr)
+adonis_euclidean <- adonis2(dist_euclidean ~ y, permutations = 99)
+
+# Compare with Bray-Curtis distance
+dist_bray <- vegdist(X, method = "bray")
+adonis_bray <- adonis2(dist_bray ~ y, permutations = 99)
+
+# Display comparison results
+cat("\nMethod Comparison:\n")
+cat(sprintf("MeLSI:        F = %.4f, p = %.4f\n", 
+           melsi_results$F_observed, melsi_results$p_value))
+cat(sprintf("Euclidean:    F = %.4f, p = %.4f\n", 
+           adonis_euclidean$F[1], adonis_euclidean$`Pr(>F)`[1]))
+cat(sprintf("Bray-Curtis: F = %.4f, p = %.4f\n", 
+           adonis_bray$F[1], adonis_bray$`Pr(>F)`[1]))
+
+# Calculate improvement
+improvement <- (melsi_results$F_observed - adonis_euclidean$F[1]) / adonis_euclidean$F[1] * 100
+cat(sprintf("\nMeLSI improvement over Euclidean: %.1f%%\n", improvement))
+```
+
+## Analyzing Learned Metric Weights
+
+```{r metric_weights}
+# Extract learned metric weights
+metric_weights <- diag(melsi_results$M_ensemble)
+taxon_names <- colnames(X_clr)
+
+# Create weight analysis
+weight_analysis <- data.frame(
+    taxon = taxon_names,
+    learned_weight = metric_weights,
+    rank = rank(-metric_weights)
+)
+
+# Sort by learned weight
+weight_analysis <- weight_analysis[order(-weight_analysis$learned_weight), ]
+
+# Display top weighted taxa
+cat("\nTop 10 Most Weighted Taxa:\n")
+top_taxa <- head(weight_analysis, 10)
+for (i in 1:nrow(top_taxa)) {
+    cat(sprintf("%2d. %s (weight: %.4f)\n", 
+               i, top_taxa$taxon[i], top_taxa$learned_weight[i]))
+}
+
+# Visualize weight distribution
+library(ggplot2)
+ggplot(weight_analysis, aes(x = learned_weight)) +
+    geom_histogram(bins = 20, fill = "steelblue", alpha = 0.7) +
+    labs(title = "Distribution of Learned Metric Weights",
+         x = "Learned Weight", y = "Count") +
+    theme_minimal()
+```
+
+## Parameter Sensitivity Analysis
+
+```{r parameter_sensitivity}
+# Test different ensemble sizes
+B_values <- c(20, 50, 100)
+results_sensitivity <- data.frame()
+
+for (B in B_values) {
+    cat(sprintf("Testing B = %d...\n", B))
+    
+    start_time <- Sys.time()
+    result <- run_melsi_permutation_test(
+        X_clr, y, 
+        n_perms = 19,  # Reduced for speed
+        B = B, 
+        show_progress = FALSE
+    )
+    runtime <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+    
+    results_sensitivity <- rbind(results_sensitivity, data.frame(
+        B = B,
+        F_statistic = result$F_observed,
+        runtime = runtime
+    ))
+}
+
+# Display parameter sensitivity results
+cat("\nParameter Sensitivity Results:\n")
+print(results_sensitivity)
+
+# Visualize parameter sensitivity
+ggplot(results_sensitivity, aes(x = B, y = F_statistic)) +
+    geom_line(color = "steelblue", size = 1) +
+    geom_point(color = "red", size = 3) +
+    labs(title = "Effect of Ensemble Size (B) on F-statistic",
+         x = "Ensemble Size (B)", y = "F-statistic") +
+    theme_minimal()
+```
+
+## Advanced Usage
+
+### Custom Parameters
+
+```{r advanced_usage}
+# Run MeLSI with custom parameters
+cat("Running MeLSI with custom parameters...\n")
+custom_results <- run_melsi_permutation_test(
+    X_clr, y, 
+    n_perms = 199,   # More permutations for higher precision
+    B = 100,         # Larger ensemble
+    m_frac = 0.8,    # More features per learner
+    pre_filter = TRUE,  # Enable pre-filtering
+    show_progress = TRUE
+)
+
+cat(sprintf("Custom MeLSI F-statistic: %.4f (p = %.4f)\n", 
+           custom_results$F_observed, custom_results$p_value))
+```
+
+### Pre-filtering Analysis
+
+```{r prefiltering}
+# Compare with and without pre-filtering
+cat("Comparing pre-filtering effects...\n")
+
+# With pre-filtering (default)
+start_time <- Sys.time()
+results_with_prefilter <- run_melsi_permutation_test(
+    X_clr, y, 
+    n_perms = 19, 
+    B = 20, 
+    pre_filter = TRUE,
+    show_progress = FALSE
+)
+time_with_prefilter <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+
+# Without pre-filtering
+start_time <- Sys.time()
+results_without_prefilter <- run_melsi_permutation_test(
+    X_clr, y, 
+    n_perms = 19, 
+    B = 20, 
+    pre_filter = FALSE,
+    show_progress = FALSE
+)
+time_without_prefilter <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+
+# Compare results
+cat("\nPre-filtering Comparison:\n")
+cat(sprintf("With pre-filtering:    F = %.4f, time = %.1fs\n", 
+           results_with_prefilter$F_observed, time_with_prefilter))
+cat(sprintf("Without pre-filtering: F = %.4f, time = %.1fs\n", 
+           results_without_prefilter$F_observed, time_without_prefilter))
+
+improvement <- (results_with_prefilter$F_observed - results_without_prefilter$F_observed) / 
+               results_without_prefilter$F_observed * 100
+speedup <- (time_without_prefilter - time_with_prefilter) / time_without_prefilter * 100
+
+cat(sprintf("F-statistic improvement: %.1f%%\n", improvement))
+cat(sprintf("Time reduction: %.1f%%\n", speedup))
+```
+
+## Summary
+
+This tutorial demonstrated:
+
+1. **Basic MeLSI usage** with synthetic microbiome data
+2. **Comparison with standard methods** (Euclidean, Bray-Curtis)
+3. **Analysis of learned metric weights** for biological interpretation
+4. **Parameter sensitivity analysis** to optimize performance
+5. **Advanced usage** with custom parameters and pre-filtering
+
+### Key Takeaways
+
+- MeLSI consistently outperforms standard distance metrics
+- Learned metric weights provide interpretable feature importance
+- Pre-filtering improves both performance and efficiency
+- Parameter selection affects performance vs. computation time trade-offs
+
+### Next Steps
+
+- Try MeLSI on your own microbiome datasets
+- Explore the comprehensive testing suite in `R/test_comparison.R`
+- Run biological validation analyses in `R/biological_validation.R`
+- Check the validation results in the `inst/` folder
+
+For more information, see the main README.md file and the comprehensive documentation.

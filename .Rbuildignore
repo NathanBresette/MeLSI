@@ -1,0 +1,11 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^README\.Rmd$
+^\.gitignore$
+^\.travis\.yml$
+^codecov\.yml$
+^\.covrignore$
+^\.DS_Store$
+^\.vscode$
+^\.idea$

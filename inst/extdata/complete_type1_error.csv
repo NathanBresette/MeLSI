@@ -1,0 +1,3 @@
+"dataset","n_samples","n_taxa","melsi_F","melsi_p","melsi_significant","melsi_time","euclidean_F","euclidean_p","euclidean_significant","euclidean_time"
+"Null_Synthetic",100,200,1.68552489947051,0.05,FALSE,14.4735109806061,1.01379947366939,0.45,FALSE,0.0102989673614502
+"Null_RealShuffled",200,123,1.57683882079277,0.15,FALSE,127.782196998596,0.85864225634882,0.65,FALSE,0.02239990234375
