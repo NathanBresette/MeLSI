@@ -20,10 +20,10 @@ Current microbiome analysis relies on fixed distance metrics like Bray-Curtis, E
 
 MeLSI **learns an optimal distance metric** specifically tailored to your data and research question by:
 
-1. **🎯 Adaptive Learning**: Discovers which microbial features are most important for separating your groups
-2. **🧠 Ensemble Intelligence**: Uses multiple weak learners with bootstrap sampling for robust results
-3. **🔍 Smart Pre-filtering**: Automatically removes noise features to focus on biological signal
-4. **📊 Interpretable Results**: Provides feature importance weights that align with biological knowledge
+1. **Adaptive Learning**: Discovers which microbial features are most important for separating your groups
+2. **Ensemble Intelligence**: Uses multiple weak learners with bootstrap sampling for robust results
+3. **Smart Pre-filtering**: Automatically removes noise features to focus on biological signal
+4. **Interpretable Results**: Provides feature importance weights that align with biological knowledge
 
 ### Why This Matters
 
@@ -97,11 +97,11 @@ MeLSI transforms your microbiome data analysis by learning a custom distance met
 
 ### What MeLSI Does Under the Hood
 
-1. **🔍 Analyzes Your Data**: Examines which microbial taxa show the strongest group differences
-2. **🧠 Learns Optimal Weights**: Discovers how important each taxon is for separating your groups  
-3. **🎯 Builds Custom Metric**: Creates a distance measure tailored to your data's biological patterns
-4. **📊 Tests Significance**: Uses permutation testing to ensure results are statistically valid
-5. **📈 Returns Insights**: Provides both statistical results and biological interpretation
+1. **Analyzes Your Data**: Examines which microbial taxa show the strongest group differences
+2. **Learns Optimal Weights**: Discovers how important each taxon is for separating your groups  
+3. **Builds Custom Metric**: Creates a distance measure tailored to your data's biological patterns
+4. **Tests Significance**: Uses permutation testing to ensure results are statistically valid
+5. **Returns Insights**: Provides both statistical results and biological interpretation
 
 ### Key Outputs
 
@@ -184,13 +184,13 @@ cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 
 MeLSI uses an innovative ensemble approach to learn optimal distance metrics:
 
-1. **🎯 Pre-filtering**: Identifies and focuses on taxa with the strongest group differences using t-tests
-2. **🔄 Bootstrap Sampling**: Creates multiple training sets by resampling your data
-3. **🧩 Feature Subsampling**: Each learner uses a random subset of features to prevent overfitting
-4. **📈 Gradient Optimization**: Learns optimal weights for each feature subset using gradient descent
-5. **⚖️ Ensemble Averaging**: Combines multiple learners, weighting better performers more heavily
-6. **🛡️ Robust Distance Calculation**: Ensures numerical stability with eigenvalue decomposition
-7. **📊 Permutation Testing**: Validates significance using null distributions from permuted data
+1. **Pre-filtering**: Identifies and focuses on taxa with the strongest group differences using t-tests
+2. **Bootstrap Sampling**: Creates multiple training sets by resampling your data
+3. **Feature Subsampling**: Each learner uses a random subset of features to prevent overfitting
+4. **Gradient Optimization**: Learns optimal weights for each feature subset using gradient descent
+5. **Ensemble Averaging**: Combines multiple learners, weighting better performers more heavily
+6. **Robust Distance Calculation**: Ensures numerical stability with eigenvalue decomposition
+7. **Permutation Testing**: Validates significance using null distributions from permuted data
 
 ### Why This Approach Works
 
