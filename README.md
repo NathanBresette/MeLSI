@@ -199,33 +199,55 @@ cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 
 ### Performance Comparison
 
-MeLSI was tested against 6 standard methods on multiple datasets:
+**Method Comparison on Synthetic & Real Data:**
 
-| Method | Average F-statistic | Detection Rate |
-|--------|-------------------|----------------|
-| **MeLSI** | **2.45** | **80%** |
-| Bray-Curtis | 1.68 | 60% |
-| Euclidean | 1.89 | 67% |
-| Jaccard | 1.09 | 33% |
-| Weighted UniFrac | 1.32 | 40% |
-| Unweighted UniFrac | 1.34 | 40% |
+| Dataset | MeLSI F-stat | MeLSI P-value | Best Traditional | Traditional F-stat | Traditional P-value |
+|---------|--------------|---------------|------------------|-------------------|-------------------|
+| **Synthetic Weak** | 2.06 | 0.05 | Euclidean | 1.21 | 0.047 |
+| **Synthetic Medium** | 2.15 | 0.05 | Euclidean | 1.44 | 0.002 |
+| **Synthetic Strong** | 2.33 | 0.05 | Euclidean | 1.60 | 0.001 |
+| **Atlas1006 (Real)** | 6.05 | 0.05 | Euclidean | 4.73 | 0.001 |
+| **SoilRep (Real)** | 1.97 | 0.05 | Bray-Curtis | 0.98 | 0.418 |
+
+**Power Analysis Across Effect Sizes:**
+
+| Effect Size | MeLSI F-stat | MeLSI P-value | Euclidean F-stat | Euclidean P-value |
+|-------------|--------------|---------------|------------------|-------------------|
+| **Small** | 1.73 | 0.05 | 1.03 | 0.40 |
+| **Medium** | 1.94 | 0.05 | 1.14 | 0.10 |
+| **Large** | 2.85 | 0.05 | 1.77 | 0.05 |
 
 ### Statistical Validation
 
-- ✅ **Type I Error**: Maintains ~5% error rate under null hypothesis
-- ✅ **Power Analysis**: Superior detection across effect sizes (60-70% improvement)
-- ✅ **Scalability**: Efficient up to 1000+ taxa and 500+ samples
-- ✅ **Biological Relevance**: 70% overlap with traditional differential abundance
+**Type I Error Control:**
+| Dataset | MeLSI F-stat | MeLSI P-value | Euclidean F-stat | Euclidean P-value |
+|---------|--------------|---------------|------------------|-------------------|
+| **Null Synthetic** | 1.69 | 0.05 | 1.01 | 0.45 |
+| **Null Real Shuffled** | 1.58 | 0.15 | 0.86 | 0.65 |
 
-### Real Data Validation
+**Scalability Analysis:**
+| Samples | Taxa | MeLSI F-stat | MeLSI Time (s) | Euclidean Time (s) |
+|---------|------|--------------|----------------|-------------------|
+| 20 | 200 | 1.80 | 6.2 | 0.003 |
+| 100 | 200 | 1.94 | 12.4 | 0.008 |
+| 500 | 200 | 3.34 | 139.6 | 0.147 |
+| 100 | 500 | 1.97 | 26.6 | 0.012 |
 
-**Atlas1006 Sex Comparison**:
-- MeLSI F-statistic: 6.05 vs Euclidean: 4.73 (28% improvement)
-- Successfully detected known biological patterns
+**Parameter Sensitivity:**
+| Parameter | Value | MeLSI F-stat | Runtime (s) |
+|-----------|-------|--------------|-------------|
+| **B (learners)** | 10 | 1.95 | 7.8 |
+| **B (learners)** | 50 | 1.96 | 32.8 |
+| **B (learners)** | 100 | 1.95 | 64.9 |
+| **m_frac** | 0.5 | 1.97 | 12.6 |
+| **m_frac** | 0.9 | 1.88 | 14.9 |
 
-**SoilRep Warming Study**:
-- MeLSI successfully detected environmental warming effects
-- Robust performance on challenging high-dimensional soil microbiome data
+**Pre-filtering Impact:**
+| Effect Size | With Pre-filter F-stat | Without Pre-filter F-stat | F Improvement | Time Reduction (%) |
+|-------------|------------------------|---------------------------|---------------|-------------------|
+| **Small** | 1.92 | 1.00 | 91% | 51% |
+| **Medium** | 1.97 | 1.02 | 95% | 9% |
+| **Large** | 3.83 | 1.89 | 194% | 2% |
 
 ## Troubleshooting
 
