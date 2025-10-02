@@ -34,7 +34,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          install.packages(c("remotes", "rcmdcheck"))
+          install.packages(c("remotes", "rcmdcheck", "BiocManager"))
+          if (!require("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+          BiocManager::install(c("phyloseq", "microbiome"))
           remotes::install_deps(dependencies = TRUE)
         shell: Rscript {0}
 

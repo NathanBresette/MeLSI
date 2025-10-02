@@ -15,8 +15,6 @@ Imports:
     ggplot2,
     dplyr,
     GUniFrac,
-    phyloseq,
-    microbiome,
     stats,
     methods
 Suggests: 
@@ -24,5 +22,7 @@ Suggests:
     knitr,
     rmarkdown,
     BiocManager,
-    devtools
+    devtools,
+    phyloseq,
+    microbiome
 VignetteBuilder: knitr
