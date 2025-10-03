@@ -32,10 +32,6 @@ Instead of using the same distance formula for every study, MeLSI learns what ma
 - ✅ **Computational Efficiency** - Pre-filtering provides 28.7% speedup
 - ✅ **Robust Validation** - Rigorous permutation testing ensures reliability
 
-If you use the MeLSI software, please cite our work:
-
-Nathan Bresette. MeLSI: Metric Learning for Statistical Inference in Microbiome Analysis. 2025. https://github.com/NathanBresette/MeLSI
-
 ## Support
 
 Check out the MeLSI examples in the `vignettes/` folder for an overview of analysis options and example runs. Users should start with the basic usage examples and then refer to the comprehensive testing suite as necessary.
