@@ -4,8 +4,6 @@
 # 2. Simpler ensemble to prevent overfitting
 # 3. More conservative feature selection
 
-source("melsi_robust.R")
-
 # Improved MeLSI permutation test
 melsi <- function(X, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE) {
     if (show_progress) {
