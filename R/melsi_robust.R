@@ -7,7 +7,7 @@
 source("melsi_robust.R")
 
 # Improved MeLSI permutation test
-run_melsi_improved <- function(X, y, n_perms = 99, B = 30, m_frac = 0.8, show_progress = TRUE) {
+melsi <- function(X, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE) {
     if (show_progress) {
         cat("--- Starting IMPROVED MeLSI Analysis ---\n")
     }
@@ -78,7 +78,7 @@ apply_conservative_prefiltering <- function(X, y, filter_frac = 0.7) {
     if (length(classes) != 2 || ncol(X) <= 10) {
         return(X)
     }
-    
+     
     class1_indices <- which(y == classes[1])
     class2_indices <- which(y == classes[2])
     

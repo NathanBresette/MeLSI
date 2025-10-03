@@ -168,7 +168,7 @@ X_clr <- log(X + 1)
 X_clr <- X_clr - rowMeans(X_clr)
 
 # Run MeLSI analysis
-results <- run_melsi_improved(
+results <- melsi(
     X_clr, y, 
     n_perms = 75,    # Number of permutations
     B = 30,          # Number of weak learners
