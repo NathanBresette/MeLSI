@@ -15,13 +15,13 @@ Current microbiome analysis relies on fixed distance metrics like Bray-Curtis, E
 
 MeLSI uses an innovative ensemble approach to learn optimal distance metrics:
 
-1. **Pre-filtering**: Identifies and focuses on taxa with the strongest group differences using t-tests
+1. **Conservative Pre-filtering**: Selects taxa with highest variance using variance-based filtering, keeping 70% of features to maintain statistical power while reducing noise
 2. **Bootstrap Sampling**: Creates multiple training sets by resampling your data
-3. **Feature Subsampling**: Each learner uses a random subset of features to prevent overfitting
+3. **Feature Subsampling**: Each learner uses a random subset of features (80%) to prevent overfitting
 4. **Gradient Optimization**: Learns optimal weights for each feature subset using gradient descent
-5. **Ensemble Averaging**: Combines multiple learners, weighting better performers more heavily
+5. **Ensemble Averaging**: Combines 30 weak learners, weighting better performers more heavily
 6. **Robust Distance Calculation**: Ensures numerical stability with eigenvalue decomposition
-7. **Permutation Testing**: Validates significance using null distributions from permuted data
+7. **Permutation Testing**: Validates significance using null distributions from permuted data (75 permutations for reliable p-values)
 
 ### Performance Results
 
