@@ -32,12 +32,6 @@ Instead of using the same distance formula for every study, MeLSI learns what ma
 - ✅ **Computational Efficiency** - Pre-filtering provides 28.7% speedup
 - ✅ **Robust Validation** - Rigorous permutation testing ensures reliability
 
-## Support
-
-Check out the MeLSI examples in the `vignettes/` folder for an overview of analysis options and example runs. Users should start with the basic usage examples and then refer to the comprehensive testing suite as necessary.
-
-If you have questions, please direct them to the [MeLSI Issues](https://github.com/NathanBresette/MeLSI/issues) page.
-
 ## Contents
 
 - [Introduction](#introduction)
@@ -261,6 +255,12 @@ cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 
 **Question**: Why does MeLSI sometimes give higher p-values than traditional methods?
 **Answer**: This is actually a feature, not a bug! MeLSI is appropriately conservative and avoids false positives on borderline effects, while still detecting strong signals reliably.
+
+## Support
+
+Check out the MeLSI examples in the `vignettes/` folder for an overview of analysis options and example runs. Users should start with the basic usage examples and then refer to the comprehensive testing suite as necessary.
+
+If you have questions, please direct them to the [MeLSI Issues](https://github.com/NathanBresette/MeLSI/issues) page.
 
 ## Citation
 
