@@ -43,9 +43,6 @@ melsi <- function(X, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE
     dist_observed <- calculate_mahalanobis_dist_robust(X_filtered, M_observed)
     F_observed <- calculate_permanova_F(dist_observed, y)
     
-    if (show_progress) {
-        cat("Observed F-statistic:", round(F_observed, 4), "\n")
-    }
     
     # 2. Generate null distribution with CONSISTENT pre-filtering
     if (show_progress) {
