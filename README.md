@@ -49,7 +49,26 @@ Instead of using the same distance formula for every study, MeLSI learns what ma
 
 ## Requirements
 
-MeLSI is an R package that can be run from R or sourced directly.
+### System Requirements
+- **R version**: 4.0.0 or higher
+- **Operating System**: Windows, macOS, or Linux
+
+### Required R Packages
+MeLSI depends on the following R packages (automatically installed):
+
+**Core Dependencies:**
+- `vegan` - Community ecology package for distance calculations
+- `ggplot2` - Graphics and visualization
+- `dplyr` - Data manipulation
+- `GUniFrac` - Phylogenetic distance calculations
+- `stats` - Statistical functions (base R)
+- `methods` - S4 methods (base R)
+
+**Optional Dependencies:**
+- `phyloseq` - Microbiome data structures (via BiocManager)
+- `microbiome` - Microbiome analysis tools (via BiocManager)
+- `devtools` - For GitHub installation
+- `BiocManager` - For Bioconductor packages
 
 ## Installation
 
