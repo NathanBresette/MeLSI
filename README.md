@@ -149,14 +149,22 @@ Example analysis can be found in the `R/` folder. The following code demonstrate
 library(MeLSI)
 
 # Generate synthetic microbiome data
-test_data <- generate_test_data(n_samples = 60, n_taxa = 100, n_signal_taxa = 10)
-X <- test_data$counts
-y <- test_data$metadata$Group
+set.seed(42)
+n_samples <- 60
+n_taxa <- 100
 
-# CLR transformation (recommended)
-X_clr <- X
-X_clr[X_clr == 0] <- 1e-10
-X_clr <- log(X_clr)
+# Create base microbiome data (log-normal distribution)
+X <- matrix(rlnorm(n_samples * n_taxa, meanlog = 2, sdlog = 1), 
+            nrow = n_samples, ncol = n_taxa)
+
+# Create group labels
+y <- c(rep("Group1", n_samples/2), rep("Group2", n_samples/2))
+
+# Add signal to first 10 taxa in Group2 (simulate differential abundance)
+X[31:60, 1:10] <- X[31:60, 1:10] * 1.5
+
+# CLR transformation (recommended for microbiome data)
+X_clr <- log(X + 1)
 X_clr <- X_clr - rowMeans(X_clr)
 
 # Run MeLSI analysis
