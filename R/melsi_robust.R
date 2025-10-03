@@ -4,9 +4,7 @@
 # 2. Simpler ensemble to prevent overfitting
 # 3. More conservative feature selection
 
-# Load required packages
-if (!requireNamespace("vegan", quietly = TRUE)) install.packages("vegan")
-library(vegan)
+# Package dependencies are handled by DESCRIPTION file
 
 #' Run MeLSI Analysis
 #'
@@ -131,7 +129,7 @@ apply_conservative_prefiltering <- function(X, y, filter_frac = 0.7) {
 
 # Helper function: Calculate PERMANOVA F-statistic
 calculate_permanova_F <- function(dist_matrix, labels) {
-    permanova_res <- adonis2(dist_matrix ~ labels, permutations = 0)
+    permanova_res <- vegan::adonis2(dist_matrix ~ labels, permutations = 0)
     f_stat <- permanova_res$F[1]
     return(f_stat)
 }
@@ -207,7 +205,7 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
         if (iter %% 20 == 0) {
             dist_matrix <- as.matrix(dist(X %*% chol(M)))
             current_f_stat <- tryCatch({
-                adonis2(dist_matrix ~ y, permutations = 0)$F[1]
+                vegan::adonis2(dist_matrix ~ y, permutations = 0)$F[1]
             }, error = function(e) 0)
             
             if (current_f_stat <= prev_f_stat) {
