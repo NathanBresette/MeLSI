@@ -27,7 +27,7 @@
 #' @export
 melsi <- function(X, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE) {
     if (show_progress) {
-        cat("--- Starting IMPROVED MeLSI Analysis ---\n")
+        cat("--- Starting MeLSI Analysis ---\n")
     }
     
     # 1. Learn metric on observed data (with conservative pre-filtering)
@@ -62,8 +62,8 @@ melsi <- function(X, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE
         dist_permuted <- calculate_mahalanobis_dist_robust(X_filtered_perm, M_permuted)
         F_null[p] <- calculate_permanova_F(dist_permuted, y_permuted)
         
-        if (show_progress && p %% max(1, floor(n_perms/10)) == 0) {
-            cat("Completed", p, "of", n_perms, "permutations\n")
+        if (show_progress) {
+            cat("Permutation", p, "of", n_perms, "\n")
         }
     }
     
@@ -253,8 +253,7 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
             n_keep <- max(10, min(n_features, floor(n_features * 0.5)))
             keep_features <- top_features[1:n_keep]
             
-            cat(sprintf("Pre-filtering: Keeping %d/%d features (%.1f%%)\n", 
-                       n_keep, n_features, 100*n_keep/n_features))
+            # Remove verbose pre-filtering message
             
             X <- X[, keep_features, drop = FALSE]
             n_features <- ncol(X)
@@ -266,7 +265,7 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
     valid_count <- 0
     f_stats <- numeric(B)
     
-    cat(sprintf("Training %d weak learners with %d features each...\n", B, m))
+    cat(sprintf("Training %d weak learners...\n", B))
     
     for (b in 1:B) {
         # Bootstrap sampling
@@ -323,6 +322,6 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
     eigen_result$values <- pmax(eigen_result$values, 1e-6)
     M_ensemble <- eigen_result$vectors %*% diag(eigen_result$values) %*% t(eigen_result$vectors)
     
-    cat(sprintf("Successfully trained %d weak learners\n", valid_count))
+    # Remove verbose success message
     return(M_ensemble)
 }
