@@ -262,7 +262,6 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
     valid_count <- 0
     f_stats <- numeric(B)
     
-    cat(sprintf("Training %d weak learners...\n", B))
     
     for (b in 1:B) {
         # Bootstrap sampling
