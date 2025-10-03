@@ -32,21 +32,6 @@ Instead of using the same distance formula for every study, MeLSI learns what ma
 - ✅ **Computational Efficiency** - Pre-filtering provides 28.7% speedup
 - ✅ **Robust Validation** - Rigorous permutation testing ensures reliability
 
-## Contents
-
-- [Overview](#overview)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Running MeLSI](#running-melsi)
-- [Run a demo](#run-a-demo)
-- [Key Advantages](#key-advantages)
-- [Options](#options)
-- [Validation Results](#validation-results)
-- [Troubleshooting](#troubleshooting)
-- [Support](#support)
-- [Citation](#citation)
-- [License](#license)
-
 ## Requirements
 
 ### System Requirements
@@ -213,6 +198,8 @@ cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 - `max_iterations` (default 50): Maximum iterations for weak learner optimization
 
 ## Validation Results
+
+*Note: All traditional methods used in comparisons are PERMANOVA tests with standard distance metrics.*
 
 ### Performance Comparison
 
