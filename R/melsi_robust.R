@@ -4,7 +4,25 @@
 # 2. Simpler ensemble to prevent overfitting
 # 3. More conservative feature selection
 
-# Improved MeLSI permutation test
+#' Run MeLSI Analysis
+#'
+#' Performs MeLSI (Metric Learning for Statistical Inference) analysis with permutation testing
+#' for microbiome data.
+#'
+#' @param X A matrix of feature abundances with samples as rows and features as columns
+#' @param y A vector of group labels for each sample
+#' @param n_perms Number of permutations for p-value calculation (default: 75)
+#' @param B Number of weak learners in the ensemble (default: 30)
+#' @param m_frac Fraction of features to use in each weak learner (default: 0.8)
+#' @param show_progress Whether to display progress information (default: TRUE)
+#'
+#' @return A list containing:
+#'   \item{F_observed}{The observed F-statistic}
+#'   \item{p_value}{The permutation-based p-value}
+#'   \item{feature_weights}{The learned feature weights}
+#'   \item{metric_matrix}{The learned distance metric matrix}
+#'
+#' @export
 melsi <- function(X, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE) {
     if (show_progress) {
         cat("--- Starting IMPROVED MeLSI Analysis ---\n")

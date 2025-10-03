@@ -8,7 +8,7 @@ Description: MeLSI (Metric Learning for Statistical Inference) is a novel machin
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Depends: R (>= 4.0.0)
 Imports: 
     vegan,
