@@ -34,18 +34,18 @@ Instead of using the same distance formula for every study, MeLSI learns what ma
 
 ## Contents
 
-- [Introduction](#introduction)
-- [Support](#support)
-- [Contents](#contents)
+- [Overview](#overview)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Running MeLSI](#running-melsi)
-- [Input data](#input-data)
-- [Output files](#output-files)
 - [Run a demo](#run-a-demo)
+- [Key Advantages](#key-advantages)
 - [Options](#options)
 - [Validation Results](#validation-results)
 - [Troubleshooting](#troubleshooting)
+- [Support](#support)
+- [Citation](#citation)
+- [License](#license)
 
 ## Requirements
 
