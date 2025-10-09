@@ -17,6 +17,7 @@
 #' @param B Number of weak learners in the ensemble (default: 30)
 #' @param m_frac Fraction of features to use in each weak learner (default: 0.8)
 #' @param show_progress Whether to display progress information (default: TRUE)
+#' @param plot_vip Whether to display a Variable Importance Plot (default: TRUE)
 #'
 #' @return A list containing:
 #'   \item{F_observed}{The observed F-statistic}
@@ -25,7 +26,7 @@
 #'   \item{metric_matrix}{The learned distance metric matrix}
 #'
 #' @export
-melsi <- function(X, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE) {
+melsi <- function(X, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE, plot_vip = TRUE) {
     if (show_progress) {
         cat("--- Starting MeLSI Analysis ---\n")
     }
@@ -67,17 +68,49 @@ melsi <- function(X, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE
     # 3. Calculate p-value
     p_value <- (sum(F_null >= F_observed) + 1) / (n_perms + 1)
     
+    # Extract feature weights and identify top features
+    feature_weights <- diag(M_observed)
+    names(feature_weights) <- colnames(X_filtered)
+    
     if (show_progress) {
         cat("Analysis completed!\n")
         cat("F-statistic:", round(F_observed, 4), "\n")
         cat("P-value:", round(p_value, 4), "\n")
+        cat("\nFeature importance: Access results$feature_weights to see which taxa\n")
+        cat("contributed most to the learned distance metric.\n")
+        
+        # Show top 5 features if available
+        if (length(feature_weights) >= 5) {
+            top_5_idx <- order(feature_weights, decreasing = TRUE)[1:5]
+            cat("\nTop 5 most important features:\n")
+            for (i in 1:5) {
+                idx <- top_5_idx[i]
+                feature_name <- if (!is.null(names(feature_weights)[idx])) {
+                    names(feature_weights)[idx]
+                } else {
+                    paste0("Feature_", idx)
+                }
+                cat(sprintf("  %d. %s (weight: %.4f)\n", i, feature_name, feature_weights[idx]))
+            }
+        }
+    }
+    
+    # Create VIP plot if requested
+    if (plot_vip && length(feature_weights) > 0) {
+        tryCatch({
+            plot_feature_importance(feature_weights)
+        }, error = function(e) {
+            if (show_progress) {
+                cat("\nNote: Could not generate VIP plot. Error:", e$message, "\n")
+            }
+        })
     }
     
     return(list(
         F_observed = F_observed,
         p_value = p_value,
         F_null = F_null,
-        feature_weights = diag(M_observed),
+        feature_weights = feature_weights,
         metric_matrix = M_observed,
         diagnostics = list(
             n_features_used = ncol(X_filtered),
@@ -320,4 +353,73 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
     
     # Remove verbose success message
     return(M_ensemble)
+}
+
+#' Plot Feature Importance from MeLSI Analysis
+#'
+#' Creates a barplot showing the top features ranked by their learned weights
+#'
+#' @param feature_weights Named vector of feature weights
+#' @param top_n Number of top features to display (default: 20)
+#'
+#' @export
+plot_feature_importance <- function(feature_weights, top_n = 20) {
+    # Validate input
+    if (length(feature_weights) == 0) {
+        stop("feature_weights is empty")
+    }
+    
+    # Sort features by weight
+    sorted_weights <- sort(feature_weights, decreasing = TRUE)
+    
+    # Take top N features
+    n_display <- min(top_n, length(sorted_weights))
+    top_weights <- sorted_weights[1:n_display]
+    
+    # Get feature names
+    feature_names <- names(top_weights)
+    if (is.null(feature_names)) {
+        feature_names <- paste0("Feature_", 1:n_display)
+    }
+    
+    # Truncate long names for better display
+    feature_names <- ifelse(nchar(feature_names) > 30, 
+                           paste0(substr(feature_names, 1, 27), "..."),
+                           feature_names)
+    
+    # Set up plot margins
+    old_par <- par(no.readonly = TRUE)
+    on.exit(par(old_par))
+    
+    par(mar = c(5, 8, 4, 2))
+    
+    # Create horizontal barplot
+    bp <- barplot(rev(top_weights), 
+                  horiz = TRUE,
+                  names.arg = rev(feature_names),
+                  las = 1,
+                  col = rev(colorRampPalette(c("#3498db", "#e74c3c"))(n_display)),
+                  border = NA,
+                  xlab = "Feature Weight",
+                  main = paste0("Top ", n_display, " Features by Importance"),
+                  cex.names = 0.8,
+                  xlim = c(0, max(top_weights) * 1.1))
+    
+    # Add grid for easier reading
+    grid(nx = NULL, ny = NA, col = "gray90", lty = 1)
+    
+    # Redraw bars on top of grid
+    barplot(rev(top_weights), 
+            horiz = TRUE,
+            names.arg = rev(feature_names),
+            las = 1,
+            col = rev(colorRampPalette(c("#3498db", "#e74c3c"))(n_display)),
+            border = NA,
+            add = TRUE,
+            axes = FALSE)
+    
+    # Add value labels
+    text(rev(top_weights), bp, 
+         labels = sprintf("%.3f", rev(top_weights)),
+         pos = 4, cex = 0.7, col = "black")
 }
