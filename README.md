@@ -90,7 +90,9 @@ library(MeLSI)
 MeLSI returns comprehensive results including:
 - **F-statistic**: How well groups are separated (higher = better)
 - **P-value**: Statistical significance (permutation-based, more reliable)
-- **Learned metric weights**: Which taxa matter most for your analysis
+- **Feature importance weights**: Which taxa matter most for your analysis - automatically displayed as a VIP chart
+- **Top 5 features**: Displayed in console with their learned weights
+- **Learned metric matrix**: Full distance metric for advanced analysis
 - **Diagnostics**: Quality metrics to ensure reliable results
 
 ### Input data
@@ -166,15 +168,22 @@ cat("MeLSI Results:\n")
 cat(sprintf("F-statistic: %.4f\n", results$F_observed))
 cat(sprintf("P-value: %.4f\n", results$p_value))
 cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
+
+# Access feature importance weights
+head(sort(results$feature_weights, decreasing = TRUE), 10)
+
+# Optional: manually plot VIP chart with custom number of features
+plot_feature_importance(results$feature_weights, top_n = 15)
 ```
 
 ## Key Advantages
 
 - **Adaptive**: Learns what matters for your specific data, not generic patterns
 - **Robust**: Ensemble approach prevents overfitting and improves generalization  
-- **Interpretable**: Feature weights reveal which taxa drive group differences
+- **Interpretable**: Feature weights reveal which taxa drive group differences - automatically visualized with VIP charts
 - **Validated**: Permutation testing ensures statistical reliability
 - **Efficient**: Pre-filtering focuses computation on relevant features
+- **User-friendly**: Automatic feature importance visualization shows exactly which taxa matter most
 
 ## Options
 
@@ -190,6 +199,7 @@ cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 - `m_frac` (default 0.8): Fraction of features to use in each weak learner
 - `pre_filter` (default TRUE): Whether to apply pre-filtering to remove low-variance features
 - `show_progress` (default TRUE): Whether to display progress information
+- `plot_vip` (default TRUE): Whether to automatically display Variable Importance Plot
 
 ### Advanced options
 
@@ -262,7 +272,7 @@ cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 **Answer**: Reduce the number of permutations (`n_perms`), ensemble size (`B`), or enable pre-filtering (`pre_filter = TRUE`).
 
 **Question**: How do I interpret the learned metric weights?
-**Answer**: Higher weights indicate taxa that contribute more to group separation. The diagonal elements of the learned metric matrix represent feature importance.
+**Answer**: Higher weights indicate taxa that contribute more to group separation. MeLSI automatically displays the top 5 most important features and generates a VIP chart showing feature importance. Access all weights via `results$feature_weights`.
 
 **Question**: Should I use CLR transformation?
 **Answer**: Yes, CLR transformation is recommended for microbiome data as it handles compositionality and zeros appropriately.
