@@ -821,11 +821,11 @@ optimize_weak_learner_omnibus <- function(X, y, n_iterations = 50, learning_rate
 #' Creates a barplot showing the top features ranked by their learned weights
 #'
 #' @param feature_weights Named vector of feature weights
-#' @param top_n Number of top features to display (default: 15)
+#' @param top_n Number of top features to display (default: 10)
 #' @param main_title Optional title for the plot
 #'
 #' @export
-plot_feature_importance <- function(feature_weights, top_n = 15, main_title = NULL) {
+plot_feature_importance <- function(feature_weights, top_n = 10, main_title = NULL) {
     # Validate input
     if (length(feature_weights) == 0) {
         stop("feature_weights is empty")
@@ -845,8 +845,8 @@ plot_feature_importance <- function(feature_weights, top_n = 15, main_title = NU
     }
     
     # Truncate long names for better display (shorter for better fit)
-    feature_names <- ifelse(nchar(feature_names) > 20, 
-                           paste0(substr(feature_names, 1, 17), "..."),
+    feature_names <- ifelse(nchar(feature_names) > 25, 
+                           paste0(substr(feature_names, 1, 22), "..."),
                            feature_names)
     
     # Set up plot margins - increase left margin for longer names
@@ -855,13 +855,13 @@ plot_feature_importance <- function(feature_weights, top_n = 15, main_title = NU
     
     # Calculate required left margin based on longest name
     max_name_length <- max(nchar(feature_names))
-    left_margin <- max(8, min(15, 4 + max_name_length * 0.4))
+    left_margin <- max(10, min(18, 6 + max_name_length * 0.5))
     
-    par(mar = c(5, left_margin, 4, 2))
+    par(mar = c(5, left_margin, 4, 3))
     
-    # Calculate proper x-axis limits with padding
+    # Calculate proper x-axis limits with more padding for value labels
     max_weight <- max(top_weights)
-    x_limits <- c(0, max_weight * 1.15)  # More padding for value labels
+    x_limits <- c(0, max_weight * 1.25)  # More padding for value labels
     
     # Create horizontal barplot
     bp <- barplot(rev(top_weights), 
@@ -872,9 +872,9 @@ plot_feature_importance <- function(feature_weights, top_n = 15, main_title = NU
                   border = NA,
                   xlab = "Feature Weight",
                   main = if (!is.null(main_title)) main_title else paste0("Top ", n_display, " Features by Importance"),
-                  cex.names = 0.9,  # Slightly larger text
+                  cex.names = 1.0,  # Larger text for better readability
                   xlim = x_limits,
-                  space = 0.5)  # Add space between bars
+                  space = 0.8)  # More space between bars
     
     # Add grid for easier reading
     grid(nx = NULL, ny = NA, col = "gray90", lty = 1)
@@ -888,11 +888,11 @@ plot_feature_importance <- function(feature_weights, top_n = 15, main_title = NU
             border = NA,
             add = TRUE,
             axes = FALSE,
-            space = 0.5)
+            space = 0.8)
     
     # Add value labels with better positioning
-    value_positions <- rev(top_weights) + (max_weight * 0.02)  # Small offset from bar end
+    value_positions <- rev(top_weights) + (max_weight * 0.03)  # Slightly larger offset from bar end
     text(value_positions, bp, 
          labels = sprintf("%.3f", rev(top_weights)),
-         pos = 4, cex = 0.8, col = "black", font = 2)  # Bold font for better readability
+         pos = 4, cex = 0.9, col = "black", font = 2)  # Larger, bold font for better readability
 }
