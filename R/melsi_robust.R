@@ -821,11 +821,11 @@ optimize_weak_learner_omnibus <- function(X, y, n_iterations = 50, learning_rate
 #' Creates a barplot showing the top features ranked by their learned weights
 #'
 #' @param feature_weights Named vector of feature weights
-#' @param top_n Number of top features to display (default: 10)
+#' @param top_n Number of top features to display (default: 8)
 #' @param main_title Optional title for the plot
 #'
 #' @export
-plot_feature_importance <- function(feature_weights, top_n = 10, main_title = NULL) {
+plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NULL) {
     # Validate input
     if (length(feature_weights) == 0) {
         stop("feature_weights is empty")
@@ -849,9 +849,9 @@ plot_feature_importance <- function(feature_weights, top_n = 10, main_title = NU
         feature_names <- paste0("Feature_", 1:n_display)
     }
     
-    # Truncate long names for better display
-    feature_names <- ifelse(nchar(feature_names) > 30, 
-                           paste0(substr(feature_names, 1, 27), "..."),
+    # Truncate long names for better display (more aggressive truncation)
+    feature_names <- ifelse(nchar(feature_names) > 20, 
+                           paste0(substr(feature_names, 1, 17), "..."),
                            feature_names)
     
     # Create data frame for ggplot
@@ -863,28 +863,26 @@ plot_feature_importance <- function(feature_weights, top_n = 10, main_title = NU
     # Create title
     title_text <- if (!is.null(main_title)) main_title else paste0("Top ", n_display, " Features by Importance")
     
-    # Create ggplot
+    # Create simple ggplot
     p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Weight, y = Feature)) +
-        ggplot2::geom_col(fill = "steelblue", alpha = 0.8) +
+        ggplot2::geom_col(fill = "steelblue") +
         ggplot2::geom_text(ggplot2::aes(label = sprintf("%.3f", Weight)), 
-                          hjust = -0.1, size = 3.5, fontface = "bold") +
+                          hjust = -0.1, size = 3) +
         ggplot2::labs(
             title = title_text,
             x = "Feature Weight",
             y = ""
         ) +
-        ggplot2::theme_minimal() +
+        ggplot2::theme_bw() +
         ggplot2::theme(
-            plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
-            axis.text.y = ggplot2::element_text(size = 11, face = "plain"),
-            axis.text.x = ggplot2::element_text(size = 10),
-            axis.title.x = ggplot2::element_text(size = 12, face = "bold"),
-            panel.grid.major.y = ggplot2::element_line(color = "gray90", linewidth = 0.5),
+            plot.title = ggplot2::element_text(size = 12, hjust = 0.5),
+            axis.text.y = ggplot2::element_text(size = 10),
+            axis.text.x = ggplot2::element_text(size = 9),
+            axis.title.x = ggplot2::element_text(size = 11),
             panel.grid.minor = ggplot2::element_blank(),
-            panel.grid.major.x = ggplot2::element_line(color = "gray90", linewidth = 0.5),
-            plot.margin = ggplot2::margin(20, 40, 20, 20)
+            plot.margin = ggplot2::margin(10, 30, 10, 10)
         ) +
-        ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.15)))  # Add padding for labels
+        ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.1)))
     
     # Print the plot
     print(p)
