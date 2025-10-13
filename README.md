@@ -87,12 +87,16 @@ library(MeLSI)
 
 ### Key Outputs
 
-MeLSI returns comprehensive results including:
+MeLSI automatically adapts to your data:
+- **2 groups**: Standard pairwise analysis with feature importance
+- **3+ groups**: Comprehensive omnibus and pairwise analysis with multiple testing correction
+
+Results include:
 - **F-statistic**: How well groups are separated (higher = better)
 - **P-value**: Statistical significance (permutation-based, more reliable)
-- **Feature importance weights**: Which taxa matter most for your analysis - automatically displayed as a VIP chart
-- **Top 5 features**: Displayed in console with their learned weights
-- **Learned metric matrix**: Full distance metric for advanced analysis
+- **Feature importance weights**: Which taxa matter most - automatically displayed as VIP charts
+- **Top features**: Displayed in console with their learned weights
+- **Multiple testing correction**: Automatic FDR correction for multi-group comparisons
 - **Diagnostics**: Quality metrics to ensure reliable results
 
 ### Input data
@@ -129,8 +133,7 @@ MeLSI generates several types of output:
 
 ## Run a demo
 
-Example analysis can be found in the `R/` folder. The following code demonstrates basic MeLSI usage:
-
+### Pairwise Analysis (2 groups)
 ```r
 # Load MeLSI package
 library(MeLSI)
@@ -154,14 +157,8 @@ X[31:60, 1:10] <- X[31:60, 1:10] * 1.5
 X_clr <- log(X + 1)
 X_clr <- X_clr - rowMeans(X_clr)
 
-# Run MeLSI analysis
-results <- melsi(
-    X_clr, y, 
-    n_perms = 75,    # Number of permutations
-    B = 30,          # Number of weak learners
-    m_frac = 0.8,    # Fraction of features per learner
-    show_progress = TRUE
-)
+# Run MeLSI analysis (automatically detects 2 groups)
+results <- melsi(X_clr, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE)
 
 # Display results
 cat("MeLSI Results:\n")
@@ -171,9 +168,37 @@ cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 
 # Access feature importance weights
 head(sort(results$feature_weights, decreasing = TRUE), 10)
+```
 
-# Optional: manually plot VIP chart with custom number of features
-plot_feature_importance(results$feature_weights, top_n = 15)
+### Multi-Group Analysis (3+ groups)
+```r
+# Create 4-group data
+set.seed(42)
+n_samples_per_group <- 40
+n_taxa <- 200
+X <- matrix(rlnorm(n_samples_per_group * 4 * n_taxa, meanlog = 2, sdlog = 1), 
+            nrow = n_samples_per_group * 4, ncol = n_taxa)
+y <- rep(c("Control", "Mild", "Moderate", "Severe"), each = n_samples_per_group)
+
+# Add progressive signal
+X[41:80, 1:10] <- X[41:80, 1:10] * 1.4    # Mild
+X[81:120, 1:10] <- X[81:120, 1:10] * 1.7  # Moderate  
+X[121:160, 1:10] <- X[121:160, 1:10] * 2.0 # Severe
+
+# CLR transformation
+X_clr <- log(X + 1)
+X_clr <- X_clr - rowMeans(X_clr)
+
+# Run MeLSI analysis (automatically detects 4 groups and runs both omnibus and pairwise)
+results <- melsi(X_clr, y, n_perms = 50, B = 20, show_progress = TRUE)
+
+# Access omnibus results
+cat("Omnibus F-statistic:", results$omnibus$F_observed, "\n")
+cat("Omnibus p-value:", results$omnibus$p_value, "\n")
+
+# Access pairwise results
+cat("Significant pairwise comparisons:", nrow(results$pairwise$significant_pairs), "\n")
+print(results$pairwise$summary_table)
 ```
 
 ## Key Advantages
@@ -194,12 +219,13 @@ plot_feature_importance(results$feature_weights, top_n = 15)
 
 ### Analysis options
 
+- `analysis_type` (default "auto"): Type of analysis - "auto", "pairwise", "omnibus", or "both"
 - `n_perms` (default 75): Number of permutations for p-value calculation
 - `B` (default 30): Number of weak learners in the ensemble
 - `m_frac` (default 0.8): Fraction of features to use in each weak learner
-- `pre_filter` (default TRUE): Whether to apply pre-filtering to remove low-variance features
 - `show_progress` (default TRUE): Whether to display progress information
 - `plot_vip` (default TRUE): Whether to automatically display Variable Importance Plot
+- `correction_method` (default "BH"): Multiple testing correction method for multi-group analysis
 
 ### Advanced options
 
@@ -272,7 +298,7 @@ plot_feature_importance(results$feature_weights, top_n = 15)
 **Answer**: Reduce the number of permutations (`n_perms`), ensemble size (`B`), or enable pre-filtering (`pre_filter = TRUE`).
 
 **Question**: How do I interpret the learned metric weights?
-**Answer**: Higher weights indicate taxa that contribute more to group separation. MeLSI automatically displays the top 5 most important features and generates a VIP chart showing feature importance. Access all weights via `results$feature_weights`.
+**Answer**: Higher weights indicate taxa that contribute more to group separation. MeLSI automatically displays the top 5 most important features and generates VIP charts showing feature importance. For multi-group analysis, you get both global feature importance (omnibus) and comparison-specific importance (pairwise). Access all weights via `results$feature_weights` or `results$omnibus$feature_weights` and `results$pairwise$pairwise_results`.
 
 **Question**: Should I use CLR transformation?
 **Answer**: Yes, CLR transformation is recommended for microbiome data as it handles compositionality and zeros appropriately.
