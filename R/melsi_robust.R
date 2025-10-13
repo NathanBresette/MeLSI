@@ -27,7 +27,14 @@
 melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0.8, 
                  show_progress = TRUE, plot_vip = TRUE, correction_method = "BH") {
     
-    # Validate input
+    # Validate input and ensure proper column names
+    if (is.null(colnames(X)) || all(colnames(X) == "")) {
+        colnames(X) <- paste0("Feature_", 1:ncol(X))
+        if (show_progress) {
+            cat("Warning: Input data has no column names. Using generic feature names.\n")
+        }
+    }
+    
     groups <- unique(y)
     n_groups <- length(groups)
     
@@ -154,10 +161,9 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
             cat("\nTop 5 most important features:\n")
             for (i in 1:5) {
                 idx <- top_5_idx[i]
-                feature_name <- if (!is.null(names(feature_weights)[idx])) {
-                    names(feature_weights)[idx]
-                } else {
-                    paste0("Feature_", idx)
+                feature_name <- names(feature_weights)[idx]
+                if (is.null(feature_name) || feature_name == "" || is.na(feature_name)) {
+                    feature_name <- paste0("Feature_", idx)
                 }
                 cat(sprintf("  %d. %s (weight: %.4f)\n", i, feature_name, feature_weights[idx]))
             }
@@ -259,10 +265,9 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
             cat("\nTop 5 globally important features:\n")
             for (i in 1:5) {
                 idx <- top_5_idx[i]
-                feature_name <- if (!is.null(names(feature_weights)[idx])) {
-                    names(feature_weights)[idx]
-                } else {
-                    paste0("Feature_", idx)
+                feature_name <- names(feature_weights)[idx]
+                if (is.null(feature_name) || feature_name == "" || is.na(feature_name)) {
+                    feature_name <- paste0("Feature_", idx)
                 }
                 cat(sprintf("  %d. %s (weight: %.4f)\n", i, feature_name, feature_weights[idx]))
             }
@@ -438,7 +443,11 @@ apply_conservative_prefiltering <- function(X, y, filter_frac = 0.7) {
     n_keep <- max(10, floor(ncol(X) * filter_frac))
     top_features <- order(feature_importance, decreasing = TRUE)[1:n_keep]
     
-    return(X[, top_features, drop = FALSE])
+    # Ensure column names are preserved
+    filtered_X <- X[, top_features, drop = FALSE]
+    colnames(filtered_X) <- colnames(X)[top_features]
+    
+    return(filtered_X)
 }
 
 # Helper function: Conservative pre-filtering for multi-group data
@@ -466,7 +475,11 @@ apply_conservative_prefiltering_multi <- function(X, y, filter_frac = 0.7) {
     n_keep <- max(10, floor(ncol(X) * filter_frac))
     top_features <- order(feature_importance, decreasing = TRUE)[1:n_keep]
     
-    return(X[, top_features, drop = FALSE])
+    # Ensure column names are preserved
+    filtered_X <- X[, top_features, drop = FALSE]
+    colnames(filtered_X) <- colnames(X)[top_features]
+    
+    return(filtered_X)
 }
 
 # Helper function: Calculate PERMANOVA F-statistic
