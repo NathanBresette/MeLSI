@@ -138,24 +138,51 @@ MeLSI generates several types of output:
 # Load MeLSI package
 library(MeLSI)
 
-# Generate synthetic microbiome data
+# Generate synthetic microbiome data with realistic taxonomic names
 set.seed(42)
 n_samples <- 60
-n_taxa <- 100
+n_taxa <- 50
+
+# Create realistic bacterial species names
+realistic_taxa <- c(
+    "Bacteroides_vulgatus", "Bacteroides_thetaiotaomicron", "Bacteroides_fragilis",
+    "Faecalibacterium_prausnitzii", "Ruminococcus_bromii", "Ruminococcus_gnavus",
+    "Bifidobacterium_longum", "Lactobacillus_acidophilus", "Akkermansia_muciniphila",
+    "Prevotella_copri", "Parabacteroides_distasonis", "Alistipes_putredinis",
+    "Roseburia_intestinalis", "Coprococcus_comes", "Blautia_wexlerae",
+    "Collinsella_aerofaciens", "Eggerthella_lenta", "Fusobacterium_nucleatum",
+    "Veillonella_parvula", "Streptococcus_salivarius", "Enterococcus_faecalis",
+    "Staphylococcus_epidermidis", "Propionibacterium_acnes", "Corynebacterium_striatum",
+    "Escherichia_coli", "Klebsiella_pneumoniae", "Enterobacter_cloacae",
+    "Clostridium_innocuum", "Clostridium_leptum", "Methanobrevibacter_smithii",
+    "Desulfovibrio_piger", "Succinivibrio_dextrinosolvens", "Micrococcus_luteus",
+    "Sarcina_ventriculi", "Slackia_equolifaciens", "Barnesiella_intestinihominis",
+    "Odoribacter_splanchnicus", "Porphyromonas_gingivalis", "Bacteroides_ovatus",
+    "Bacteroides_uniformis", "Bacteroides_caccae", "Bifidobacterium_adolescentis",
+    "Bifidobacterium_bifidum", "Lactobacillus_casei", "Lactobacillus_plantarum",
+    "Lactobacillus_rhamnosus", "Lactobacillus_reuteri", "Prevotella_oralis",
+    "Dorea_longicatena", "Ruminococcus_bromii"
+)
 
 # Create base microbiome data (log-normal distribution)
 X <- matrix(rlnorm(n_samples * n_taxa, meanlog = 2, sdlog = 1), 
             nrow = n_samples, ncol = n_taxa)
 
-# Create group labels
-y <- c(rep("Group1", n_samples/2), rep("Group2", n_samples/2))
+# IMPORTANT: Set realistic column names
+colnames(X) <- realistic_taxa[1:n_taxa]
 
-# Add signal to first 10 taxa in Group2 (simulate differential abundance)
+# Create group labels
+y <- c(rep("Control", n_samples/2), rep("Treatment", n_samples/2))
+
+# Add signal to first 10 taxa in Treatment group (simulate differential abundance)
 X[31:60, 1:10] <- X[31:60, 1:10] * 1.5
 
 # CLR transformation (recommended for microbiome data)
 X_clr <- log(X + 1)
 X_clr <- X_clr - rowMeans(X_clr)
+
+# IMPORTANT: Preserve column names after transformation
+colnames(X_clr) <- colnames(X)
 
 # Run MeLSI analysis (automatically detects 2 groups)
 results <- melsi(X_clr, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE)
@@ -166,28 +193,61 @@ cat(sprintf("F-statistic: %.4f\n", results$F_observed))
 cat(sprintf("P-value: %.4f\n", results$p_value))
 cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 
-# Access feature importance weights
-head(sort(results$feature_weights, decreasing = TRUE), 10)
+# Access feature importance weights with actual taxonomic names
+cat("\nTop 10 most important taxa:\n")
+top_10 <- head(sort(results$feature_weights, decreasing = TRUE), 10)
+for (i in 1:length(top_10)) {
+    cat(sprintf("  %2d. %-30s (weight: %.4f)\n", i, names(top_10)[i], top_10[i]))
+}
 ```
 
 ### Multi-Group Analysis (3+ groups)
 ```r
-# Create 4-group data
+# Create 4-group data with realistic taxonomic names
 set.seed(42)
-n_samples_per_group <- 40
-n_taxa <- 200
+n_samples_per_group <- 30
+n_taxa <- 50
+
+# Use same realistic taxa as pairwise example
+realistic_taxa <- c(
+    "Bacteroides_vulgatus", "Bacteroides_thetaiotaomicron", "Bacteroides_fragilis",
+    "Faecalibacterium_prausnitzii", "Ruminococcus_bromii", "Ruminococcus_gnavus",
+    "Bifidobacterium_longum", "Lactobacillus_acidophilus", "Akkermansia_muciniphila",
+    "Prevotella_copri", "Parabacteroides_distasonis", "Alistipes_putredinis",
+    "Roseburia_intestinalis", "Coprococcus_comes", "Blautia_wexlerae",
+    "Collinsella_aerofaciens", "Eggerthella_lenta", "Fusobacterium_nucleatum",
+    "Veillonella_parvula", "Streptococcus_salivarius", "Enterococcus_faecalis",
+    "Staphylococcus_epidermidis", "Propionibacterium_acnes", "Corynebacterium_striatum",
+    "Escherichia_coli", "Klebsiella_pneumoniae", "Enterobacter_cloacae",
+    "Clostridium_innocuum", "Clostridium_leptum", "Methanobrevibacter_smithii",
+    "Desulfovibrio_piger", "Succinivibrio_dextrinosolvens", "Micrococcus_luteus",
+    "Sarcina_ventriculi", "Slackia_equolifaciens", "Barnesiella_intestinihominis",
+    "Odoribacter_splanchnicus", "Porphyromonas_gingivalis", "Bacteroides_ovatus",
+    "Bacteroides_uniformis", "Bacteroides_caccae", "Bifidobacterium_adolescentis",
+    "Bifidobacterium_bifidum", "Lactobacillus_casei", "Lactobacillus_plantarum",
+    "Lactobacillus_rhamnosus", "Lactobacillus_reuteri", "Prevotella_oralis",
+    "Dorea_longicatena", "Ruminococcus_bromii"
+)
+
 X <- matrix(rlnorm(n_samples_per_group * 4 * n_taxa, meanlog = 2, sdlog = 1), 
             nrow = n_samples_per_group * 4, ncol = n_taxa)
+
+# IMPORTANT: Set realistic column names
+colnames(X) <- realistic_taxa[1:n_taxa]
+
 y <- rep(c("Control", "Mild", "Moderate", "Severe"), each = n_samples_per_group)
 
-# Add progressive signal
-X[41:80, 1:10] <- X[41:80, 1:10] * 1.4    # Mild
-X[81:120, 1:10] <- X[81:120, 1:10] * 1.7  # Moderate  
-X[121:160, 1:10] <- X[121:160, 1:10] * 2.0 # Severe
+# Add progressive signal to simulate disease severity
+X[31:60, 1:10] <- X[31:60, 1:10] * 1.4    # Mild
+X[61:90, 1:10] <- X[61:90, 1:10] * 1.7    # Moderate  
+X[91:120, 1:10] <- X[91:120, 1:10] * 2.0  # Severe
 
 # CLR transformation
 X_clr <- log(X + 1)
 X_clr <- X_clr - rowMeans(X_clr)
+
+# IMPORTANT: Preserve column names after transformation
+colnames(X_clr) <- colnames(X)
 
 # Run MeLSI analysis (automatically detects 4 groups and runs both omnibus and pairwise)
 results <- melsi(X_clr, y, n_perms = 50, B = 20, show_progress = TRUE)
@@ -196,8 +256,15 @@ results <- melsi(X_clr, y, n_perms = 50, B = 20, show_progress = TRUE)
 cat("Omnibus F-statistic:", results$omnibus$F_observed, "\n")
 cat("Omnibus p-value:", results$omnibus$p_value, "\n")
 
+# Show global feature importance
+cat("\nTop 5 globally important taxa:\n")
+global_top <- head(sort(results$omnibus$feature_weights, decreasing = TRUE), 5)
+for (i in 1:length(global_top)) {
+    cat(sprintf("  %d. %-30s (weight: %.4f)\n", i, names(global_top)[i], global_top[i]))
+}
+
 # Access pairwise results
-cat("Significant pairwise comparisons:", nrow(results$pairwise$significant_pairs), "\n")
+cat("\nSignificant pairwise comparisons:", nrow(results$pairwise$significant_pairs), "\n")
 print(results$pairwise$summary_table)
 ```
 
