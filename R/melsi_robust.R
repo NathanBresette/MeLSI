@@ -831,6 +831,11 @@ plot_feature_importance <- function(feature_weights, top_n = 10, main_title = NU
         stop("feature_weights is empty")
     }
     
+    # Load required packages
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting. Please install it with: install.packages('ggplot2')")
+    }
+    
     # Sort features by weight
     sorted_weights <- sort(feature_weights, decreasing = TRUE)
     
@@ -844,55 +849,46 @@ plot_feature_importance <- function(feature_weights, top_n = 10, main_title = NU
         feature_names <- paste0("Feature_", 1:n_display)
     }
     
-    # Truncate long names for better display (shorter for better fit)
-    feature_names <- ifelse(nchar(feature_names) > 25, 
-                           paste0(substr(feature_names, 1, 22), "..."),
+    # Truncate long names for better display
+    feature_names <- ifelse(nchar(feature_names) > 30, 
+                           paste0(substr(feature_names, 1, 27), "..."),
                            feature_names)
     
-    # Set up plot margins - increase left margin for longer names
-    old_par <- par(no.readonly = TRUE)
-    on.exit(par(old_par))
+    # Create data frame for ggplot
+    plot_data <- data.frame(
+        Feature = factor(feature_names, levels = rev(feature_names)),  # Reverse for top-to-bottom ordering
+        Weight = top_weights
+    )
     
-    # Calculate required left margin based on longest name
-    max_name_length <- max(nchar(feature_names))
-    left_margin <- max(10, min(18, 6 + max_name_length * 0.5))
+    # Create title
+    title_text <- if (!is.null(main_title)) main_title else paste0("Top ", n_display, " Features by Importance")
     
-    par(mar = c(5, left_margin, 4, 3))
+    # Create ggplot
+    p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Weight, y = Feature)) +
+        ggplot2::geom_col(fill = "steelblue", alpha = 0.8) +
+        ggplot2::geom_text(ggplot2::aes(label = sprintf("%.3f", Weight)), 
+                          hjust = -0.1, size = 3.5, fontface = "bold") +
+        ggplot2::labs(
+            title = title_text,
+            x = "Feature Weight",
+            y = ""
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(
+            plot.title = ggplot2::element_text(size = 14, face = "bold", hjust = 0.5),
+            axis.text.y = ggplot2::element_text(size = 11, face = "plain"),
+            axis.text.x = ggplot2::element_text(size = 10),
+            axis.title.x = ggplot2::element_text(size = 12, face = "bold"),
+            panel.grid.major.y = ggplot2::element_line(color = "gray90", linewidth = 0.5),
+            panel.grid.minor = ggplot2::element_blank(),
+            panel.grid.major.x = ggplot2::element_line(color = "gray90", linewidth = 0.5),
+            plot.margin = ggplot2::margin(20, 40, 20, 20)
+        ) +
+        ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.15)))  # Add padding for labels
     
-    # Calculate proper x-axis limits with more padding for value labels
-    max_weight <- max(top_weights)
-    x_limits <- c(0, max_weight * 1.25)  # More padding for value labels
+    # Print the plot
+    print(p)
     
-    # Create horizontal barplot
-    bp <- barplot(rev(top_weights), 
-                  horiz = TRUE,
-                  names.arg = rev(feature_names),
-                  las = 1,
-                  col = "steelblue",
-                  border = NA,
-                  xlab = "Feature Weight",
-                  main = if (!is.null(main_title)) main_title else paste0("Top ", n_display, " Features by Importance"),
-                  cex.names = 1.0,  # Larger text for better readability
-                  xlim = x_limits,
-                  space = 0.8)  # More space between bars
-    
-    # Add grid for easier reading
-    grid(nx = NULL, ny = NA, col = "gray90", lty = 1)
-    
-    # Redraw bars on top of grid
-    barplot(rev(top_weights), 
-            horiz = TRUE,
-            names.arg = rev(feature_names),
-            las = 1,
-            col = "steelblue",
-            border = NA,
-            add = TRUE,
-            axes = FALSE,
-            space = 0.8)
-    
-    # Add value labels with better positioning
-    value_positions <- rev(top_weights) + (max_weight * 0.03)  # Slightly larger offset from bar end
-    text(value_positions, bp, 
-         labels = sprintf("%.3f", rev(top_weights)),
-         pos = 4, cex = 0.9, col = "black", font = 2)  # Larger, bold font for better readability
+    # Return the plot object for further customization if needed
+    return(invisible(p))
 }
