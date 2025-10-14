@@ -846,6 +846,9 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
     n_display <- min(top_n, length(sorted_weights))
     top_weights <- sorted_weights[1:n_display]
     
+    # Debug: Print values
+    cat("DEBUG: top_n =", top_n, ", length(sorted_weights) =", length(sorted_weights), ", n_display =", n_display, "\n")
+    
     # Get feature names
     feature_names <- names(top_weights)
     if (is.null(feature_names)) {
@@ -865,6 +868,7 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
     
     # Create title
     title_text <- if (!is.null(main_title)) main_title else paste0("Top ", n_display, " Features by Importance")
+    cat("DEBUG: title_text =", title_text, "\n")
     
     # Create simple ggplot
     p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Weight, y = Feature)) +
