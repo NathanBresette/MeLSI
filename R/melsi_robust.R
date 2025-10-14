@@ -27,8 +27,6 @@
 melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0.8, 
                  show_progress = TRUE, plot_vip = TRUE, correction_method = "BH") {
     
-    cat("DEBUG: MeLSI function called with plot_vip =", plot_vip, "\n")
-    
     # Validate input and ensure proper column names
     if (is.null(colnames(X)) || all(colnames(X) == "")) {
         colnames(X) <- paste0("Feature_", 1:ncol(X))
@@ -174,17 +172,13 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     
     # 5. Create VIP plot if requested
     if (plot_vip && length(feature_weights) > 0) {
-        cat("DEBUG: About to call plot_feature_importance...\n")
         tryCatch({
             plot_feature_importance(feature_weights)
         }, error = function(e) {
             if (show_progress) {
                 cat("\nNote: Could not generate VIP plot. Error:", e$message, "\n")
-                cat("DEBUG: Full error details:", toString(e), "\n")
             }
         })
-    } else {
-        cat("DEBUG: plot_vip =", plot_vip, ", length(feature_weights) =", length(feature_weights), "\n")
     }
     
     return(list(
@@ -282,18 +276,14 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
     
     # 7. Create VIP plot if requested
     if (plot_vip && length(feature_weights) > 0) {
-        cat("DEBUG: About to call plot_feature_importance (omnibus)...\n")
         tryCatch({
             plot_feature_importance(feature_weights, 
                                   main_title = "Global Feature Importance (Omnibus)")
         }, error = function(e) {
             if (show_progress) {
                 cat("\nNote: Could not generate VIP plot. Error:", e$message, "\n")
-                cat("DEBUG: Full error details:", toString(e), "\n")
             }
         })
-    } else {
-        cat("DEBUG: plot_vip =", plot_vip, ", length(feature_weights) =", length(feature_weights), "\n")
     }
     
     return(list(
@@ -841,9 +831,6 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
         stop("feature_weights is empty")
     }
     
-    # Debug: Print the top_n value being used
-    cat("DEBUG: plot_feature_importance called with top_n =", top_n, "\n")
-    
     # Load required packages
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("ggplot2 package is required for plotting. Please install it with: install.packages('ggplot2')")
@@ -855,9 +842,6 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
     # Take top N features
     n_display <- min(top_n, length(sorted_weights))
     top_weights <- sorted_weights[1:n_display]
-    
-    # Debug: Print values
-    cat("DEBUG: top_n =", top_n, ", length(sorted_weights) =", length(sorted_weights), ", n_display =", n_display, "\n")
     
     # Get feature names
     feature_names <- names(top_weights)
@@ -878,7 +862,6 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
     
     # Create title
     title_text <- if (!is.null(main_title)) main_title else paste0("Top ", n_display, " Features by Importance")
-    cat("DEBUG: title_text =", title_text, "\n")
     
     # Create simple ggplot
     p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Weight, y = Feature)) +
