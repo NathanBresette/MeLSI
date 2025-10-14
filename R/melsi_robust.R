@@ -172,13 +172,17 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     
     # 5. Create VIP plot if requested
     if (plot_vip && length(feature_weights) > 0) {
+        cat("DEBUG: About to call plot_feature_importance...\n")
         tryCatch({
             plot_feature_importance(feature_weights)
         }, error = function(e) {
             if (show_progress) {
                 cat("\nNote: Could not generate VIP plot. Error:", e$message, "\n")
+                cat("DEBUG: Full error details:", toString(e), "\n")
             }
         })
+    } else {
+        cat("DEBUG: plot_vip =", plot_vip, ", length(feature_weights) =", length(feature_weights), "\n")
     }
     
     return(list(
@@ -276,14 +280,18 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
     
     # 7. Create VIP plot if requested
     if (plot_vip && length(feature_weights) > 0) {
+        cat("DEBUG: About to call plot_feature_importance (omnibus)...\n")
         tryCatch({
             plot_feature_importance(feature_weights, 
                                   main_title = "Global Feature Importance (Omnibus)")
         }, error = function(e) {
             if (show_progress) {
                 cat("\nNote: Could not generate VIP plot. Error:", e$message, "\n")
+                cat("DEBUG: Full error details:", toString(e), "\n")
             }
         })
+    } else {
+        cat("DEBUG: plot_vip =", plot_vip, ", length(feature_weights) =", length(feature_weights), "\n")
     }
     
     return(list(
