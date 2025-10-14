@@ -831,6 +831,9 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
         stop("feature_weights is empty")
     }
     
+    # Debug: Print the top_n value being used
+    cat("DEBUG: plot_feature_importance called with top_n =", top_n, "\n")
+    
     # Load required packages
     if (!requireNamespace("ggplot2", quietly = TRUE)) {
         stop("ggplot2 package is required for plotting. Please install it with: install.packages('ggplot2')")
