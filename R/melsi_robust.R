@@ -27,6 +27,8 @@
 melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0.8, 
                  show_progress = TRUE, plot_vip = TRUE, correction_method = "BH") {
     
+    cat("DEBUG: MeLSI function called with plot_vip =", plot_vip, "\n")
+    
     # Validate input and ensure proper column names
     if (is.null(colnames(X)) || all(colnames(X) == "")) {
         colnames(X) <- paste0("Feature_", 1:ncol(X))
