@@ -9,11 +9,11 @@
 
 ### The Problem
 
-Current microbiome analysis relies on fixed distance metrics like Bray-Curtis, Euclidean, or Jaccard that treat all microbial taxa equally. This "one-size-fits-all" approach often misses subtle but biologically important differences between groups.
+Current microbiome beta diversity analysis relies on fixed distance metrics like Bray-Curtis, Euclidean, or Jaccard that treat all microbial taxa equally. This "one-size-fits-all" approach often misses subtle but biologically important differences between groups.
 
 ### How MeLSI Works
 
-MeLSI uses an innovative ensemble approach to learn optimal distance metrics:
+MeLSI uses an innovative ensemble approach to learn optimal distance metrics for community composition analysis:
 
 1. **Conservative Pre-filtering**: Selects taxa with highest variance using variance-based filtering, keeping 70% of features to maintain statistical power while reducing noise
 2. **Bootstrap Sampling**: Creates multiple training sets by resampling your data
@@ -21,16 +21,16 @@ MeLSI uses an innovative ensemble approach to learn optimal distance metrics:
 4. **Gradient Optimization**: Learns optimal weights for each feature subset using gradient descent
 5. **Ensemble Averaging**: Combines 30 weak learners, weighting better performers more heavily
 6. **Robust Distance Calculation**: Ensures numerical stability with eigenvalue decomposition
-7. **Permutation Testing**: Validates significance using null distributions from permuted data (75 permutations for reliable p-values)
+7. **Permutation Testing**: Validates significance using null distributions from permuted data (200 permutations for reliable p-values)
 
 ### Performance Results
 
 Instead of using the same distance formula for every study, MeLSI learns what matters most for **your specific data**, resulting in:
 
-- ✅ **Perfect Type I Error Control** - No false positives on null data
-- ✅ **Appropriate Statistical Power** - Detects real signals when they exist
-- ✅ **Computational Efficiency** - Pre-filtering provides 28.7% speedup
-- ✅ **Robust Validation** - Rigorous permutation testing ensures reliability
+- ✅ **Proper Type I Error Control** - No false positives on null data (p = 0.607 and 0.224)
+- ✅ **Competitive Statistical Power** - Context-dependent performance with interpretable feature weights
+- ✅ **Biological Interpretability** - Feature importance weights reveal which taxa drive group differences
+- ✅ **Real-World Validation** - 9.1% improvement on Atlas1006, significant detection on DietSwap where traditional methods were marginal
 
 ## Requirements
 
@@ -42,7 +42,7 @@ Instead of using the same distance formula for every study, MeLSI learns what ma
 MeLSI depends on the following R packages (automatically installed):
 
 **Core Dependencies:**
-- `vegan` - Community ecology package for distance calculations
+- `vegan` - Community ecology package for PERMANOVA calculations
 - `ggplot2` - Graphics and visualization
 - `dplyr` - Data manipulation
 - `GUniFrac` - Phylogenetic distance calculations
@@ -185,7 +185,7 @@ X_clr <- X_clr - rowMeans(X_clr)
 colnames(X_clr) <- colnames(X)
 
 # Run MeLSI analysis (automatically detects 2 groups)
-results <- melsi(X_clr, y, n_perms = 75, B = 30, m_frac = 0.8, show_progress = TRUE)
+results <- melsi(X_clr, y, n_perms = 200, B = 30, m_frac = 0.8, show_progress = TRUE)
 
 # Display results
 cat("MeLSI Results:\n")
@@ -250,7 +250,7 @@ X_clr <- X_clr - rowMeans(X_clr)
 colnames(X_clr) <- colnames(X)
 
 # Run MeLSI analysis (automatically detects 4 groups and runs both omnibus and pairwise)
-results <- melsi(X_clr, y, n_perms = 50, B = 20, show_progress = TRUE)
+results <- melsi(X_clr, y, n_perms = 200, B = 30, show_progress = TRUE)
 
 # Access omnibus results
 cat("Omnibus F-statistic:", results$omnibus$F_observed, "\n")
@@ -287,7 +287,7 @@ print(results$pairwise$summary_table)
 ### Analysis options
 
 - `analysis_type` (default "auto"): Type of analysis - "auto", "pairwise", "omnibus", or "both"
-- `n_perms` (default 75): Number of permutations for p-value calculation
+- `n_perms` (default 200): Number of permutations for p-value calculation
 - `B` (default 30): Number of weak learners in the ensemble
 - `m_frac` (default 0.8): Fraction of features to use in each weak learner
 - `show_progress` (default TRUE): Whether to display progress information
@@ -302,59 +302,110 @@ print(results$pairwise$summary_table)
 
 ## Validation Results
 
-*Note: All traditional methods used in comparisons are PERMANOVA tests with standard distance metrics.*
+*Note: All traditional methods used in comparisons are PERMANOVA tests with standard distance metrics. MeLSI uses 200 permutations; traditional methods use 999 permutations.*
+
+### Type I Error Control
+
+**Table 1. Type I Error Control (Proper Calibration)**
+
+| Dataset | MeLSI F | MeLSI p | Best Traditional | Best Trad F | Best Trad p |
+|---------|---------|---------|------------------|-------------|-------------|
+| **Null Synthetic** | 1.307 | 0.607 | Euclidean | 0.964 | 0.638 |
+| **Null Real Shuffled** | 1.737 | 0.224 | Bray-Curtis | 1.020 | 0.397 |
+
+*✅ MeLSI shows proper Type I error control - no false positives on null data! All p-values are appropriately high, well above 0.05.*
 
 ### Performance Comparison
 
-**Method Comparison on Synthetic & Real Data (Improved MeLSI):**
+**Table 2. Method Comparison on Synthetic & Real Data**
 
-| Dataset | MeLSI F-stat | MeLSI P-value | Best Traditional | Traditional F-stat | Traditional P-value |
-|---------|--------------|---------------|------------------|-------------------|-------------------|
-| **Synthetic Weak** | 1.43 | 0.066 | Euclidean | 1.21 | 0.051 |
-| **Synthetic Medium** | 1.61 | 0.013 | Euclidean | 1.44 | 0.002 |
-| **Synthetic Strong** | 1.67 | 0.013 | Euclidean | 1.60 | 0.001 |
-| **Atlas1006 (Real)** | 4.85 | 0.013 | Euclidean | 4.73 | 0.001 |
-| **SoilRep (Real)** | 1.49 | 0.171 | Bray-Curtis | 0.98 | 0.431 |
+| Dataset | MeLSI F | MeLSI p | Best Traditional | Best Trad F | Best Trad p |
+|---------|---------|---------|------------------|-------------|-------------|
+| **Synthetic Small (1.5×)** | 1.333 | 0.373 | Weighted UniFrac | 1.592 | 0.021* |
+| **Synthetic Medium (2.0×)** | 1.605 | 0.030* | Bray-Curtis | 1.829 | 0.001* |
+| **Synthetic Large (3.0×)** | 2.217 | 0.005* | Weighted UniFrac | 6.145 | 0.001* |
+| **Atlas1006 (Real)** | 5.141 | 0.005* | Euclidean | 4.711 | 0.001* |
+| **DietSwap (Real)** | 2.856 | 0.015* | Bray-Curtis | 2.153 | 0.058 |
 
-*Note: Improved MeLSI shows appropriate conservatism - correctly identifies strong signals while avoiding false positives on weak/borderline effects.*
+(*p < 0.05)
 
-### Statistical Validation
+**Key Findings:**
+- **Atlas1006**: MeLSI achieved 9.1% improvement over best traditional method (Euclidean)
+- **DietSwap**: MeLSI detected significant differences (p=0.015) where best traditional method was marginal (p=0.058)
+- **Synthetic data**: MeLSI shows appropriate conservatism on weak signals, detects medium/large effects reliably
+- **Context-dependent**: Specialized methods (Weighted UniFrac, Bray-Curtis) may outperform on large effect sizes with phylogenetic structure
 
-**Type I Error Control (Perfect!):**
-| Dataset | MeLSI F-stat | MeLSI P-value | Euclidean F-stat | Euclidean P-value |
-|---------|--------------|---------------|------------------|-------------------|
-| **Null Synthetic** | 1.28 | 0.49 | 1.01 | 0.45 |
-| **Null Real Shuffled** | 1.21 | 0.54 | 0.86 | 0.59 |
+### Scalability Analysis
 
-*✅ MeLSI shows perfect Type I error control - no false positives on null data!*
+**Table 3. Computational Performance Across Sample Sizes**
 
-**Power Analysis:**
-| Effect Size | MeLSI F-stat | MeLSI P-value | Euclidean F-stat | Euclidean P-value |
-|-------------|--------------|---------------|------------------|-------------------|
-| **Small** | 1.33 | 0.34 | 1.03 | 0.41 |
-| **Medium** | 1.46 | 0.11 | 1.14 | 0.09 |
-| **Large** | 1.98 | 0.013 | 1.77 | 0.013 |
+| n | p | MeLSI F | MeLSI Time (s) | Best Traditional | Best Trad F | Best Trad Time (s) |
+|---|---|---------|----------------|------------------|-------------|-------------------|
+| 20 | 200 | 1.222 | 185.4 | Bray-Curtis | 1.133 | 0.014 |
+| 50 | 200 | 1.263 | 181.6 | Bray-Curtis | 1.222 | 0.029 |
+| 100 | 200 | 1.510 | 238.2 | Bray-Curtis | 1.676 | 0.087 |
+| 200 | 200 | 1.548 | 480.0 | Bray-Curtis | 2.254 | 0.311 |
+| 500 | 200 | 2.424 | 2244.3 | Bray-Curtis | 4.319 | 2.324 |
 
-*✅ MeLSI shows appropriate power - detects strong signals while being conservative on weak effects.*
+**Scalability Notes:**
+- MeLSI shows good small-sample properties (appropriate conservatism at n=20-50)
+- F-statistics increase monotonically with sample size as expected
+- Computation time scales approximately O(n²) but remains practical for typical microbiome studies
+- Pre-filtering provides computational benefits on high-dimensional datasets
 
-**Pre-filtering Benefits:**
-| Effect Size | With Pre-filter F-stat | Without Pre-filter F-stat | F Improvement | Time Reduction (%) |
-|-------------|------------------------|---------------------------|---------------|-------------------|
-| **Small** | 1.44 | 1.00 | 44% | 49% |
-| **Medium** | 1.44 | 1.01 | 42% | 25% |
-| **Large** | 2.80 | 1.87 | 50% | 12% |
+### Parameter Sensitivity
 
-*✅ Pre-filtering provides consistent performance benefits with significant computational speedup.*
+**Table 4. Robust Hyperparameter Performance**
 
-### Real Data Validation
+| Parameter | Value | F-statistic | p-value | Time (s) |
+|-----------|-------|-------------|---------|----------|
+| **Ensemble Size (B)** |
+| | 10 | 1.438 | 0.179 | 98.7 |
+| | 20 | 1.467 | 0.109 | 160.8 |
+| | 30 | 1.478 | 0.090 | 235.0 |
+| | 50 | 1.465 | 0.119 | 389.9 |
+| | 100 | 1.462 | 0.100 | 768.1 |
+| **Feature Fraction (m_frac)** |
+| | 0.5 | 1.492 | 0.139 | 187.2 |
+| | 0.7 | 1.459 | 0.109 | 213.5 |
+| | 0.8 | 1.442 | 0.134 | 240.7 |
+| | 0.9 | 1.422 | 0.124 | 262.2 |
+| | 1.0 | 1.427 | 0.124 | 283.7 |
 
-**Atlas1006 Sex Comparison**:
-- MeLSI F-statistic: 6.05 vs Euclidean: 4.73 (28% improvement)
-- Successfully detected known biological patterns
+**Robustness Notes:**
+- F-statistics remain stable across wide range of hyperparameters
+- Default settings (B=30, m_frac=0.8) provide good balance of performance and computational efficiency
+- Results validate that MeLSI is not overly sensitive to parameter choices
 
-**SoilRep Warming Study**:
-- MeLSI successfully detected environmental warming effects
-- Robust performance on challenging high-dimensional soil microbiome data
+### Pre-filtering Benefits
+
+**Table 5. Impact of Conservative Pre-filtering**
+
+| Dataset | Effect | Features | With Filter F | Without Filter F | F Change | Time Saved |
+|---------|--------|----------|---------------|------------------|----------|------------|
+| Test 1 | Small | 500 | 1.278 | 1.284 | -0.5% | 5.8% |
+| Test 2 | Medium | 200 | 1.432 | 1.416 | +1.7% | 4.1% |
+| Test 3 | Large | 100 | 1.224 | 1.267 | -4.3% | 1.2% |
+
+**Pre-filtering Notes:**
+- Modest computational benefits (1-6% time reduction)
+- Minimal impact on statistical power (changes < 5%)
+- Benefits are context-dependent; most valuable for extremely high-dimensional datasets
+- Conservative threshold (70% retention) prioritizes maintaining signal
+
+## Reproducibility
+
+All results in the research paper are fully reproducible. The `reproducibility_scripts/` directory contains standalone R scripts for generating each table:
+
+- `table1_type1_error.R` - Type I error control analysis
+- `table2_power_analysis.R` - Method comparison on synthetic and real datasets
+- `table2_dietswap.R` - DietSwap-specific analysis
+- `table3_scalability.R` - Scalability analysis across sample sizes
+- `table4_parameter_sensitivity.R` - Parameter sensitivity analysis
+- `table5_prefiltering.R` - Pre-filtering benefit analysis
+- `run_all_tables.R` - Master script to run all analyses
+
+Each script is self-contained, uses `set.seed(42)` for reproducibility, and generates CSV outputs. See `reproducibility_scripts/README.md` for detailed instructions.
 
 ## Troubleshooting
 
@@ -368,10 +419,13 @@ print(results$pairwise$summary_table)
 **Answer**: Higher weights indicate taxa that contribute more to group separation. MeLSI automatically displays the top 5 most important features and generates VIP charts showing feature importance. For multi-group analysis, you get both global feature importance (omnibus) and comparison-specific importance (pairwise). Access all weights via `results$feature_weights` or `results$omnibus$feature_weights` and `results$pairwise$pairwise_results`.
 
 **Question**: Should I use CLR transformation?
-**Answer**: Yes, CLR transformation is recommended for microbiome data as it handles compositionality and zeros appropriately.
+**Answer**: Yes, CLR transformation is recommended for microbiome data as it handles compositionality appropriately. MeLSI is designed to work with CLR-transformed data.
 
 **Question**: Why does MeLSI sometimes give higher p-values than traditional methods?
-**Answer**: This is actually a feature, not a bug! MeLSI is appropriately conservative and avoids false positives on borderline effects, while still detecting strong signals reliably.
+**Answer**: This is actually a feature, not a bug! MeLSI is appropriately conservative and avoids false positives on borderline effects, while still detecting strong signals reliably. The interpretable feature weights provide biological insight even when p-values are similar to traditional methods.
+
+**Question**: When should I choose MeLSI over traditional methods?
+**Answer**: Prefer MeLSI for PERMANOVA workflows that need calibrated p-values plus interpretable taxa weights (e.g., diet interventions or subtle host phenotype comparisons). Traditional methods may be preferable when you need the fastest possible computation or when working with very large effect sizes and phylogenetic structure.
 
 ## Support
 
@@ -385,11 +439,11 @@ If you use MeLSI in your research, please cite:
 
 ```bibtex
 @software{melsi2025,
-  title={MeLSI: Metric Learning for Statistical Inference in Microbiome Analysis},
-  author={Bresette, Nathan},
+  title={MeLSI: Metric Learning for Statistical Inference in Microbiome Community Composition Analysis},
+  author={Bresette, Nathan and Ericsson, Aaron and Woods, Carter and Lin, Ai-Ling},
   year={2025},
   url={https://github.com/NathanBresette/MeLSI},
-  note={Novel machine learning method for microbiome differential analysis}
+  note={Novel machine learning framework for microbiome beta diversity analysis}
 }
 ```
 
@@ -399,4 +453,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-*MeLSI: Advancing microbiome analysis through adaptive metric learning*
+*MeLSI: Advancing microbiome beta diversity analysis through adaptive metric learning and interpretable feature importance*

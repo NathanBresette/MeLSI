@@ -1,0 +1,2 @@
+"Dataset","MeLSI_F","MeLSI_p","Euclidean_F","Euclidean_p","BrayCurtis_F","BrayCurtis_p","Jaccard_F","Jaccard_p","WeightedUniFrac_F","WeightedUniFrac_p","UnweightedUniFrac_F","UnweightedUniFrac_p","Best_Traditional","Best_Traditional_F"
+"DietSwap (Real)",2.85617145784564,0.0149253731343284,1.64460105980214,0.09,2.15336308099763,0.058,1.9214763466285,0.1,NA,NA,NA,NA,"BrayCurtis",2.15336308099763
