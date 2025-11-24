@@ -144,9 +144,43 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     # 3. Calculate p-value
     p_value <- (sum(F_null >= F_observed) + 1) / (n_perms + 1)
     
-    # 4. Extract feature weights and display results
+    # 4. Extract feature weights and calculate directionality
     feature_weights <- diag(M_observed)
     names(feature_weights) <- colnames(X_filtered)
+    
+    # Calculate directionality (which group has higher abundance)
+    groups <- unique(y)
+    directionality_info <- NULL
+    mean_abundances <- NULL
+    log2_fold_change <- NULL
+    
+    if (length(groups) == 2) {
+        group1_idx <- which(y == groups[1])
+        group2_idx <- which(y == groups[2])
+        
+        # Calculate mean abundances for each group
+        mean_group1 <- colMeans(X_filtered[group1_idx, , drop = FALSE])
+        mean_group2 <- colMeans(X_filtered[group2_idx, , drop = FALSE])
+        
+        # Determine directionality
+        directionality_info <- ifelse(mean_group1 > mean_group2, 
+                                      paste0("Higher in ", groups[1]), 
+                                      paste0("Higher in ", groups[2]))
+        names(directionality_info) <- colnames(X_filtered)
+        
+        # Calculate fold change and log2 fold change
+        fold_change <- mean_group1 / (mean_group2 + 1e-10)
+        log2_fold_change <- log2(fold_change)
+        names(log2_fold_change) <- colnames(X_filtered)
+        
+        # Store mean abundances
+        mean_abundances <- list(
+            group1 = mean_group1,
+            group2 = mean_group2,
+            group1_name = as.character(groups[1]),
+            group2_name = as.character(groups[2])
+        )
+    }
     
     if (show_progress) {
         cat("Analysis completed!\n")
@@ -154,8 +188,11 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         cat("P-value:", round(p_value, 4), "\n")
         cat("\nFeature importance: Access results$feature_weights to see which taxa\n")
         cat("contributed most to the learned distance metric.\n")
+        if (!is.null(directionality_info)) {
+            cat("Directionality: Access results$directionality to see which group has higher abundance.\n")
+        }
         
-        # Show top 5 features
+        # Show top 5 features with directionality if available
         if (length(feature_weights) >= 5) {
             top_5_idx <- order(feature_weights, decreasing = TRUE)[1:5]
             cat("\nTop 5 most important features:\n")
@@ -165,7 +202,11 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
                 if (is.null(feature_name) || feature_name == "" || is.na(feature_name)) {
                     feature_name <- paste0("Feature_", idx)
                 }
-                cat(sprintf("  %d. %s (weight: %.4f)\n", i, feature_name, feature_weights[idx]))
+                direction_text <- ""
+                if (!is.null(directionality_info) && !is.null(directionality_info[idx])) {
+                    direction_text <- paste0(" [", directionality_info[idx], "]")
+                }
+                cat(sprintf("  %d. %s (weight: %.4f)%s\n", i, feature_name, feature_weights[idx], direction_text))
             }
         }
     }
@@ -173,7 +214,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     # 5. Create VIP plot if requested
     if (plot_vip && length(feature_weights) > 0) {
         tryCatch({
-            plot_feature_importance(feature_weights)
+            plot_feature_importance(feature_weights, directionality = directionality_info)
         }, error = function(e) {
             if (show_progress) {
                 cat("\nNote: Could not generate VIP plot. Error:", e$message, "\n")
@@ -186,6 +227,9 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         p_value = p_value,
         F_null = F_null,
         feature_weights = feature_weights,
+        directionality = directionality_info,
+        mean_abundances = mean_abundances,
+        log2_fold_change = log2_fold_change,
         metric_matrix = M_observed,
         diagnostics = list(
             n_features_used = ncol(X_filtered),
@@ -248,9 +292,32 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
     # 5. Calculate p-value
     p_value <- (sum(F_null >= F_observed) + 1) / (n_perms + 1)
     
-    # 6. Extract feature weights and display results
+    # 6. Extract feature weights and calculate directionality (highest mean group)
     feature_weights <- diag(M_observed)
     names(feature_weights) <- colnames(X_filtered)
+    
+    # Calculate which group has highest mean abundance for each feature
+    directionality_info <- NULL
+    mean_abundances <- NULL
+    
+    if (n_groups >= 2) {
+        # Calculate mean abundances for each group
+        mean_by_group <- list()
+        for (g in groups) {
+            group_idx <- which(y == g)
+            mean_by_group[[as.character(g)]] <- colMeans(X_filtered[group_idx, , drop = FALSE])
+        }
+        
+        # Determine which group has highest mean for each feature
+        mean_matrix <- do.call(rbind, mean_by_group)
+        max_group_idx <- apply(mean_matrix, 2, which.max)
+        directionality_info <- as.character(groups[max_group_idx])
+        names(directionality_info) <- colnames(X_filtered)
+        
+        # Store mean abundances
+        mean_abundances <- mean_by_group
+        names(mean_abundances) <- as.character(groups)
+    }
     
     if (show_progress) {
         cat("Omnibus analysis completed!\n")
@@ -258,8 +325,11 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         cat("P-value:", round(p_value, 4), "\n")
         cat("\nGlobal feature importance: Access results$feature_weights to see which taxa\n")
         cat("contributed most to overall group separation.\n")
+        if (!is.null(directionality_info)) {
+            cat("Directionality: Access results$directionality to see which group has highest mean abundance.\n")
+        }
         
-        # Show top 5 features
+        # Show top 5 features with directionality if available
         if (length(feature_weights) >= 5) {
             top_5_idx <- order(feature_weights, decreasing = TRUE)[1:5]
             cat("\nTop 5 globally important features:\n")
@@ -269,7 +339,11 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
                 if (is.null(feature_name) || feature_name == "" || is.na(feature_name)) {
                     feature_name <- paste0("Feature_", idx)
                 }
-                cat(sprintf("  %d. %s (weight: %.4f)\n", i, feature_name, feature_weights[idx]))
+                direction_text <- ""
+                if (!is.null(directionality_info) && !is.null(directionality_info[idx])) {
+                    direction_text <- paste0(" [Highest in ", directionality_info[idx], "]")
+                }
+                cat(sprintf("  %d. %s (weight: %.4f)%s\n", i, feature_name, feature_weights[idx], direction_text))
             }
         }
     }
@@ -278,7 +352,8 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
     if (plot_vip && length(feature_weights) > 0) {
         tryCatch({
             plot_feature_importance(feature_weights, 
-                                  main_title = "Global Feature Importance (Omnibus)")
+                                  main_title = "Global Feature Importance (Omnibus)",
+                                  directionality = directionality_info)
         }, error = function(e) {
             if (show_progress) {
                 cat("\nNote: Could not generate VIP plot. Error:", e$message, "\n")
@@ -291,6 +366,8 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         p_value = p_value,
         F_null = F_null,
         feature_weights = feature_weights,
+        directionality = directionality_info,
+        mean_abundances = mean_abundances,
         metric_matrix = M_observed,
         group_info = list(
             groups = groups,
@@ -823,9 +900,10 @@ optimize_weak_learner_omnibus <- function(X, y, n_iterations = 50, learning_rate
 #' @param feature_weights Named vector of feature weights
 #' @param top_n Number of top features to display (default: 8)
 #' @param main_title Optional title for the plot
+#' @param directionality Optional named vector indicating which group has higher abundance for each feature
 #'
 #' @export
-plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NULL) {
+plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NULL, directionality = NULL) {
     # Validate input
     if (length(feature_weights) == 0) {
         stop("feature_weights is empty")
@@ -854,35 +932,89 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
                            paste0(substr(feature_names, 1, 17), "..."),
                            feature_names)
     
+    # Extract directionality for top features if provided
+    directionality_colors <- NULL
+    directionality_labels <- NULL
+    if (!is.null(directionality) && length(directionality) > 0) {
+        # Match directionality to top features
+        directionality_labels <- directionality[names(top_weights)]
+        
+        # Create color mapping based on directionality
+        # Extract unique group names from directionality strings
+        unique_groups <- unique(directionality_labels)
+        if (length(unique_groups) == 2) {
+            # Two groups - use two colors
+            directionality_colors <- ifelse(directionality_labels == unique_groups[1], 
+                                           "#E63946",  # Red for group 1
+                                           "#457B9D")  # Blue for group 2
+        } else {
+            # More than 2 groups or missing - use default color
+            directionality_colors <- rep("steelblue", length(directionality_labels))
+        }
+    }
+    
     # Create data frame for ggplot
     plot_data <- data.frame(
         Feature = factor(feature_names, levels = rev(feature_names)),  # Reverse for top-to-bottom ordering
         Weight = top_weights
     )
     
+    # Add directionality info if available
+    if (!is.null(directionality_labels)) {
+        plot_data$Directionality <- directionality_labels
+        plot_data$Color <- directionality_colors
+    }
+    
     # Create title
     title_text <- if (!is.null(main_title)) main_title else paste0("Top ", n_display, " Features by Importance")
     
-    # Create simple ggplot
-    p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Weight, y = Feature)) +
-        ggplot2::geom_col(fill = "steelblue") +
-        ggplot2::geom_text(ggplot2::aes(label = sprintf("%.3f", Weight)), 
-                          hjust = -0.1, size = 3) +
-        ggplot2::labs(
-            title = title_text,
-            x = "Feature Weight",
-            y = ""
-        ) +
-        ggplot2::theme_bw() +
-        ggplot2::theme(
-            plot.title = ggplot2::element_text(size = 12, hjust = 0.5),
-            axis.text.y = ggplot2::element_text(size = 10),
-            axis.text.x = ggplot2::element_text(size = 9),
-            axis.title.x = ggplot2::element_text(size = 11),
-            panel.grid.minor = ggplot2::element_blank(),
-            plot.margin = ggplot2::margin(10, 30, 10, 10)
-        ) +
-        ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.1)))
+    # Create ggplot with or without directionality coloring
+    if (!is.null(directionality_labels) && !is.null(directionality_colors)) {
+        # Plot with directionality colors
+        p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Weight, y = Feature, fill = Directionality)) +
+            ggplot2::geom_col() +
+            ggplot2::scale_fill_manual(values = setNames(directionality_colors, unique(directionality_labels)),
+                                      name = "Higher in") +
+            ggplot2::geom_text(ggplot2::aes(label = sprintf("%.3f", Weight)), 
+                              hjust = -0.1, size = 3) +
+            ggplot2::labs(
+                title = title_text,
+                x = "Feature Weight",
+                y = ""
+            ) +
+            ggplot2::theme_bw() +
+            ggplot2::theme(
+                plot.title = ggplot2::element_text(size = 12, hjust = 0.5),
+                axis.text.y = ggplot2::element_text(size = 10),
+                axis.text.x = ggplot2::element_text(size = 9),
+                axis.title.x = ggplot2::element_text(size = 11),
+                panel.grid.minor = ggplot2::element_blank(),
+                plot.margin = ggplot2::margin(10, 30, 10, 10),
+                legend.position = "right"
+            ) +
+            ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.1)))
+    } else {
+        # Plot without directionality (original behavior)
+        p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Weight, y = Feature)) +
+            ggplot2::geom_col(fill = "steelblue") +
+            ggplot2::geom_text(ggplot2::aes(label = sprintf("%.3f", Weight)), 
+                              hjust = -0.1, size = 3) +
+            ggplot2::labs(
+                title = title_text,
+                x = "Feature Weight",
+                y = ""
+            ) +
+            ggplot2::theme_bw() +
+            ggplot2::theme(
+                plot.title = ggplot2::element_text(size = 12, hjust = 0.5),
+                axis.text.y = ggplot2::element_text(size = 10),
+                axis.text.x = ggplot2::element_text(size = 9),
+                axis.title.x = ggplot2::element_text(size = 11),
+                panel.grid.minor = ggplot2::element_blank(),
+                plot.margin = ggplot2::margin(10, 30, 10, 10)
+            ) +
+            ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.1)))
+    }
     
     # Print the plot
     print(p)
