@@ -171,7 +171,7 @@ where $SS_{between}$ is the between-group sum of squares, $SS_{within}$ is the w
 
 \noindent To compute valid p-values, we generate a null distribution under the hypothesis of no group differences:
 
-1. Permute group labels: $\mathbf{y}_{perm} \leftarrow$ random permutation of $\mathbf{y}$
+1. Permute group labels: random permutation of $\mathbf{y} \rightarrow \mathbf{y}_{perm}$
 2. Apply identical pre-filtering to permuted data
 3. Learn metric $\mathbf{M}_{perm}$ on $(\mathbf{X}_{filtered}, \mathbf{y}_{perm})$ using the full MeLSI algorithm (repeating Phase 1: pre-filtering, ensemble construction, and metric optimization)
 4. Calculate $F_{perm}$ on $(\mathbf{X}_{filtered}, \mathbf{y}_{perm})$ with $\mathbf{M}_{perm}$
