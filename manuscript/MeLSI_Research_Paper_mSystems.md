@@ -235,6 +235,9 @@ Time complexity is O(n²p²B·n_perms) in the worst case, but conservative pre-f
 
 \noindent MeLSI was compared against standard PERMANOVA analyses using five fixed distance metrics: Bray-Curtis dissimilarity, Euclidean distance, Jaccard dissimilarity, weighted UniFrac (phylogenetic, where applicable), and unweighted UniFrac (phylogenetic, where applicable).
 
+## DATA AVAILABILITY
+
+MeLSI source code and all validation scripts are permanently archived at Zenodo (DOI: 10.5281/zenodo.17714848) and available at https://github.com/NathanBresette/MeLSI under the MIT license. All validation data and analysis scripts are included in the package repository for full reproducibility. The Atlas1006 and DietSwap datasets are available through the R microbiome package (https://microbiome.github.io/).
 
 ## RESULTS
 
@@ -456,10 +459,6 @@ $^{4}$ Department of Veterinary Pathobiology, University of Missouri, Columbia, 
 $^{5}$ Department of Radiology, University of Missouri, Columbia, Missouri, USA.
 
 $^{6}$ Division of Biological Sciences, University of Missouri, Columbia, Missouri, USA.
-
-## DATA AVAILABILITY
-
-MeLSI source code and all validation scripts are permanently archived at Zenodo (DOI: 10.5281/zenodo.17714848) and available at https://github.com/NathanBresette/MeLSI under the MIT license. All validation data and analysis scripts are included in the package repository for full reproducibility. The Atlas1006 and DietSwap datasets are available through the R microbiome package (https://microbiome.github.io/).
 
 ## REFERENCES
 
