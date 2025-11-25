@@ -1,9 +1,11 @@
 # MeLSI: Metric Learning for Statistical Inference in Microbiome Community Composition Analysis
 
-**Nathan Bresette**$^{1,2}$, **Aaron C. Ericsson**$^{3,4}$, **Carter Woods**$^{1}$, **Ai-Ling Lin**$^{1,2,5,6}$
+**Nathan Bresette**$^{1,2}$, **Aaron C. Ericsson**$^{3,4}$, **Carter Woods**$^{1}$, **Ai-Ling Lin**$^{1,2,5,6,*}$
 
 \footnotesize
 AUTHOR AFFILIATIONS See affiliation list [\textcolor{blue}{\underline{here}}](#author-affiliations).
+
+$^{*}$ Corresponding author: Ai-Ling Lin, linal@health.missouri.edu
 \normalsize
 
 ## ABSTRACT
@@ -428,7 +430,7 @@ MeLSI's learned distance metrics are compatible with other distance-based ordina
 
 ## FUNDING
 
-[To be added]
+This work was supported by the National Institutes of Health/National Institute on Aging (NIH/NIA) grant R56AG079586 to A-LL.
 
 ## AUTHOR CONTRIBUTIONS
 
