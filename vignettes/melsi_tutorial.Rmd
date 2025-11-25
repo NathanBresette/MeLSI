@@ -41,11 +41,9 @@ source("R/melsi_robust.R")
 
 ```{r basic_setup}
 # Load required packages
+library(MeLSI)
 library(vegan)
 library(ggplot2)
-
-# Source MeLSI functions (adjust path as needed)
-# source("R/melsi_robust.R")
 
 # Generate synthetic microbiome data for demonstration
 set.seed(42)
@@ -77,11 +75,11 @@ cat("Data range:", round(range(X_clr), 3), "\n")
 ```{r run_melsi}
 # Run MeLSI with default parameters
 cat("Running MeLSI analysis...\n")
-melsi_results <- run_melsi_permutation_test(
+melsi_results <- melsi(
     X_clr, y, 
     n_perms = 99,    # Number of permutations
-    B = 50,          # Number of weak learners
-    m_frac = 0.7,    # Fraction of features per learner
+    B = 30,          # Number of weak learners
+    m_frac = 0.8,    # Fraction of features per learner
     show_progress = TRUE
 )
 
@@ -120,15 +118,15 @@ cat(sprintf("\nMeLSI improvement over Euclidean: %.1f%%\n", improvement))
 ## Analyzing Learned Metric Weights
 
 ```{r metric_weights}
-# Extract learned metric weights
-metric_weights <- diag(melsi_results$M_ensemble)
-taxon_names <- colnames(X_clr)
+# Extract learned feature weights
+feature_weights <- melsi_results$feature_weights
+taxon_names <- names(feature_weights)
 
 # Create weight analysis
 weight_analysis <- data.frame(
     taxon = taxon_names,
-    learned_weight = metric_weights,
-    rank = rank(-metric_weights)
+    learned_weight = feature_weights,
+    rank = rank(-feature_weights)
 )
 
 # Sort by learned weight
@@ -162,7 +160,7 @@ for (B in B_values) {
     cat(sprintf("Testing B = %d...\n", B))
     
     start_time <- Sys.time()
-    result <- run_melsi_permutation_test(
+    result <- melsi(
         X_clr, y, 
         n_perms = 19,  # Reduced for speed
         B = B, 
@@ -197,12 +195,11 @@ ggplot(results_sensitivity, aes(x = B, y = F_statistic)) +
 ```{r advanced_usage}
 # Run MeLSI with custom parameters
 cat("Running MeLSI with custom parameters...\n")
-custom_results <- run_melsi_permutation_test(
+custom_results <- melsi(
     X_clr, y, 
     n_perms = 199,   # More permutations for higher precision
     B = 100,         # Larger ensemble
     m_frac = 0.8,    # More features per learner
-    pre_filter = TRUE,  # Enable pre-filtering
     show_progress = TRUE
 )
 
@@ -210,40 +207,15 @@ cat(sprintf("Custom MeLSI F-statistic: %.4f (p = %.4f)\n",
            custom_results$F_observed, custom_results$p_value))
 ```
 
-### Pre-filtering Analysis
+### Pre-filtering
 
-```{r prefiltering}
-# Compare with and without pre-filtering
-cat("Comparing pre-filtering effects...\n")
+MeLSI automatically applies conservative pre-filtering to focus on high-variance features
+while maintaining statistical validity. This is always enabled and helps improve computational
+efficiency and reduce noise from uninformative features.
 
-# With pre-filtering (default)
-start_time <- Sys.time()
-results_with_prefilter <- run_melsi_permutation_test(
-    X_clr, y, 
-    n_perms = 19, 
-    B = 20, 
-    pre_filter = TRUE,
-    show_progress = FALSE
-)
-time_with_prefilter <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-
-# Without pre-filtering
-start_time <- Sys.time()
-results_without_prefilter <- run_melsi_permutation_test(
-    X_clr, y, 
-    n_perms = 19, 
-    B = 20, 
-    pre_filter = FALSE,
-    show_progress = FALSE
-)
-time_without_prefilter <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-
-# Compare results
-cat("\nPre-filtering Comparison:\n")
-cat(sprintf("With pre-filtering:    F = %.4f, time = %.1fs\n", 
-           results_with_prefilter$F_observed, time_with_prefilter))
-cat(sprintf("Without pre-filtering: F = %.4f, time = %.1fs\n", 
-           results_without_prefilter$F_observed, time_without_prefilter))
+```{r prefiltering, eval=FALSE}
+# Note: Pre-filtering is automatically applied in MeLSI
+# No additional configuration needed
 
 improvement <- (results_with_prefilter$F_observed - results_without_prefilter$F_observed) / 
                results_without_prefilter$F_observed * 100
