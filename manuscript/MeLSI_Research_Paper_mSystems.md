@@ -146,7 +146,7 @@ and $F_b$ is the PERMANOVA F-statistic achieved by weak learner $b$ on its boots
 \noindent To ensure numerical stability, we compute the learned Mahalanobis distance using eigenvalue decomposition:
 
 1. Compute eigendecomposition: $\mathbf{M}_{ensemble} = \mathbf{V} \Lambda \mathbf{V}^T$ where $\mathbf{V}$ is the matrix of eigenvectors and $\Lambda$ is the diagonal matrix of eigenvalues
-2. Enforce positive eigenvalues: $\Lambda_{ii} \leftarrow \max(\Lambda_{ii}, 10^{-6})$
+2. Enforce positive eigenvalues: $\max(\Lambda_{ii}, 10^{-6}) \rightarrow \Lambda_{ii}$
 3. Compute $\mathbf{M}^{-1/2} = \mathbf{V} \Lambda^{-1/2} \mathbf{V}^T$
 4. Transform data: $\mathbf{Y} = \mathbf{X} \mathbf{M}^{-1/2}$
 5. Calculate Euclidean distances in transformed space: $d_M = ||\mathbf{y}_i - \mathbf{y}_k||_2$
