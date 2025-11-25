@@ -5,7 +5,7 @@
 \footnotesize
 AUTHOR AFFILIATIONS See affiliation list [\textcolor{blue}{\underline{here}}](#author-affiliations).
 
-$^{*}$ Corresponding author: Ai-Ling Lin, linal@health.missouri.edu
+$^{*}$ Address correspondence to Ai-Ling Lin, ai-ling.lin@health.missouri.edu
 \normalsize
 
 ## ABSTRACT
@@ -458,7 +458,7 @@ $^{2}$ Institute for Data Science and Informatics, University of Missouri, Colum
 
 $^{3}$ Bioinformatics and Analytics Core, University of Missouri, Columbia, Missouri, USA.
 
-$^{4}$ Department of Veterinary Pathobiology, University of Missouri, Columbia, Missouri, USA.
+$^{4}$ Department of Pathobiology and Integrative Biomedical Sciences, University of Missouri, Columbia, Missouri, USA.
 
 $^{5}$ Department of Radiology, University of Missouri, Columbia, Missouri, USA.
 
