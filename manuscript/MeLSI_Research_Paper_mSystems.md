@@ -249,8 +249,8 @@ MeLSI source code and all validation scripts are permanently archived at Zenodo 
 
 **Table 1. Type I Error Control on Null Data**
 
-\noindent | Dataset | n | p | MeLSI F | MeLSI p | Best Traditional | Best Trad F | Best Trad p |
-|---------|---|---|---------|---------|------------------|-------------|-------------|
+| Dataset | n | p | MeLSI F | MeLSI p | Best Traditional | Best Trad F | Best Trad p |
+|-------------------|-----|-----|---------|---------|------------------|-------------|-------------|
 | Null Synthetic | 200 | 200 | 1.307 | 0.607 | Euclidean | 0.964 | 0.638 |
 | Null Real Shuffled | 200 | 130 | 1.737 | 0.224 | Euclidean | 1.215 | 0.249 |
 
@@ -264,8 +264,8 @@ These results demonstrate proper Type I error control across both synthetic and 
 
 **Table 2. Method Comparison on Synthetic and Real Datasets**
 
-\noindent | Dataset | MeLSI F | MeLSI p | Best Traditional | Best Trad F | Best Trad p |
-|-------------|---------|---------|------------------|-------------|-------------|
+| Dataset | MeLSI F | MeLSI p | Best Traditional | Best Trad F | Best Trad p |
+|------------------------|---------|---------|------------------|-------------|-------------|
 | Synthetic Small (1.5×) | 1.333 | 0.373 | Weighted UniFrac | 1.592 | 0.021* |
 | Synthetic Medium (2.0×) | 1.605 | 0.030* | Bray-Curtis | 1.829 | 0.001* |
 | Synthetic Large (3.0×) | 2.217 | 0.005* | Weighted UniFrac | 6.145 | 0.001* |
@@ -300,20 +300,22 @@ MeLSI demonstrated the strongest effect size among all tested methods on this da
 
 **Table 3. Scalability Across Sample Size and Dimensionality**
 
-\noindent | Dataset | n | p | MeLSI F | MeLSI Time (s) | Best Traditional | Best Trad F | Best Trad Time (s) |
-|---------|---|---|---------|----------------|------------------|-------------|-------------------|
-| Varying n (fixed p=200) |
+| | n | p | MeLSI F | MeLSI Time | Best Trad | Trad F | Trad Time |
+|---------------|-----|------|---------|------------|-----------|--------|-----------|
+| **Varying n (p=200)** | | | | | | | |
 | n=20 | 20 | 200 | 1.222 | 185.4 | Bray-Curtis | 1.133 | 0.014 |
 | n=50 | 50 | 200 | 1.263 | 181.6 | Bray-Curtis | 1.222 | 0.029 |
 | n=100 | 100 | 200 | 1.510 | 238.2 | Bray-Curtis | 1.676 | 0.087 |
 | n=200 | 200 | 200 | 1.548 | 480.0 | Bray-Curtis | 2.254 | 0.311 |
 | n=500 | 500 | 200 | 2.424 | 2244.3 | Bray-Curtis | 4.319 | 2.324 |
-| Varying p (fixed n=100) |
+| **Varying p (n=100)** | | | | | | | |
 | p=50 | 100 | 50 | 1.532 | 172.1 | Bray-Curtis | 2.018 | 0.087 |
 | p=100 | 100 | 100 | 1.772 | 174.8 | Bray-Curtis | 2.258 | 0.082 |
 | p=200 | 100 | 200 | 1.621 | 248.7 | Bray-Curtis | 1.986 | 0.084 |
 | p=500 | 100 | 500 | 1.422 | 865.2 | Bray-Curtis | 1.415 | 0.089 |
 | p=1000 | 100 | 1000 | 1.305 | 4373.8 | Bray-Curtis | 1.119 | 0.108 |
+
+\noindent Time measured in seconds; "Trad" = traditional method.
 
 #### Sample size scaling
 
@@ -333,15 +335,15 @@ Computation time increased dramatically with dimensionality, from 172.1s (p=50) 
 
 **Table 4. Parameter Sensitivity Analysis**
 
-\noindent | Parameter | Value | F-statistic | p-value | Time (s) |
-|-----------|-------|-------------|---------|----------|
-| **Ensemble Size (B)** |
+| Parameter | Value | F-statistic | p-value | Time (s) |
+|------------------------------|-------|-------------|---------|----------|
+| **Ensemble Size (B)** | | | | |
 | | 10 | 1.438 | 0.179 | 98.7 |
 | | 20 | 1.467 | 0.109 | 160.8 |
 | | 30 | 1.478 | 0.090 | 235.0 |
 | | 50 | 1.465 | 0.119 | 389.9 |
 | | 100 | 1.462 | 0.100 | 768.1 |
-| **Feature Fraction (m_frac)** |
+| **Feature Fraction (m_frac)** | | | | |
 | | 0.5 | 1.492 | 0.139 | 187.2 |
 | | 0.7 | 1.459 | 0.109 | 213.5 |
 | | 0.8 | 1.442 | 0.134 | 240.7 |
@@ -364,8 +366,8 @@ This stability indicates that MeLSI's ensemble approach is robust and that 10-30
 
 **Table 5. Benefit of Conservative Pre-filtering**
 
-\noindent | Dataset | Effect | Features | Filter F | Filter p | No Filter F | No Filter p | Delta F | Delta Time |
-|---------|--------|----------|----------|----------|-------------|-------------|-----|-------|
+| Dataset | Effect | Features | Filter F | Filter p | No Filter F | No Filter p | Delta F | Delta Time |
+|---------|--------|----------|----------|----------|-------------|-------------|---------|------------|
 | Test 1 | Small | 500 | 1.278 | 0.622 | 1.284 | 0.572 | -0.5% | 5.8% |
 | Test 2 | Medium | 200 | 1.432 | 0.169 | 1.416 | 0.139 | +1.7% | 4.1% |
 | Test 3 | Large | 100 | 1.224 | 0.627 | 1.267 | 0.622 | -4.3% | 1.2% |
