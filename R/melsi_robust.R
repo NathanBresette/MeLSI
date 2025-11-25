@@ -137,7 +137,8 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         F_null[p] <- calculate_permanova_F(dist_permuted, y_permuted)
         
         if (show_progress) {
-            cat("Permutation", p, "of", n_perms, "\n")
+            cat("  [Permutation", p, "of", n_perms, "]\n")
+            flush.console()
         }
     }
     
@@ -154,32 +155,45 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     mean_abundances <- NULL
     log2_fold_change <- NULL
     
+    # Always calculate directionality for 2 groups
     if (length(groups) == 2) {
         group1_idx <- which(y == groups[1])
         group2_idx <- which(y == groups[2])
         
-        # Calculate mean abundances for each group
-        mean_group1 <- colMeans(X_filtered[group1_idx, , drop = FALSE])
-        mean_group2 <- colMeans(X_filtered[group2_idx, , drop = FALSE])
-        
-        # Determine directionality
-        directionality_info <- ifelse(mean_group1 > mean_group2, 
-                                      paste0("Higher in ", groups[1]), 
-                                      paste0("Higher in ", groups[2]))
-        names(directionality_info) <- colnames(X_filtered)
-        
-        # Calculate fold change and log2 fold change
-        fold_change <- mean_group1 / (mean_group2 + 1e-10)
-        log2_fold_change <- log2(fold_change)
-        names(log2_fold_change) <- colnames(X_filtered)
-        
-        # Store mean abundances
-        mean_abundances <- list(
-            group1 = mean_group1,
-            group2 = mean_group2,
-            group1_name = as.character(groups[1]),
-            group2_name = as.character(groups[2])
-        )
+        # Ensure we have valid indices
+        if (length(group1_idx) > 0 && length(group2_idx) > 0) {
+            # Calculate mean abundances for each group
+            mean_group1 <- colMeans(X_filtered[group1_idx, , drop = FALSE])
+            mean_group2 <- colMeans(X_filtered[group2_idx, , drop = FALSE])
+            
+            # Determine directionality - ensure it's always a character vector with names
+            directionality_info <- ifelse(mean_group1 > mean_group2, 
+                                          paste0("Higher in ", as.character(groups[1])), 
+                                          paste0("Higher in ", as.character(groups[2])))
+            names(directionality_info) <- colnames(X_filtered)
+            
+            # Verify directionality was created correctly
+            if (is.null(directionality_info) || length(directionality_info) == 0) {
+                warning("Failed to calculate directionality. Creating default values.")
+                directionality_info <- rep("Unknown", ncol(X_filtered))
+                names(directionality_info) <- colnames(X_filtered)
+            }
+            
+            # Calculate fold change and log2 fold change
+            fold_change <- mean_group1 / (mean_group2 + 1e-10)
+            log2_fold_change <- log2(fold_change)
+            names(log2_fold_change) <- colnames(X_filtered)
+            
+            # Store mean abundances
+            mean_abundances <- list(
+                group1 = mean_group1,
+                group2 = mean_group2,
+                group1_name = as.character(groups[1]),
+                group2_name = as.character(groups[2])
+            )
+        } else {
+            warning("Invalid group indices. Cannot calculate directionality.")
+        }
     }
     
     if (show_progress) {
@@ -222,12 +236,14 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         })
     }
     
+    # Return results - directionality should always be included for 2-group analysis
+    # (will be NULL for multi-group, but should be a named vector for 2 groups)
     return(list(
         F_observed = F_observed,
         p_value = p_value,
         F_null = F_null,
         feature_weights = feature_weights,
-        directionality = directionality_info,
+        directionality = directionality_info,  # Named vector: "Higher in [group]" for each feature
         mean_abundances = mean_abundances,
         log2_fold_change = log2_fold_change,
         metric_matrix = M_observed,
@@ -285,7 +301,8 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         F_null[p] <- calculate_permanova_F(dist_permuted, y_permuted)
         
         if (show_progress) {
-            cat("Permutation", p, "of", n_perms, "\n")
+            cat("  [Permutation", p, "of", n_perms, "]\n")
+            flush.console()
         }
     }
     
