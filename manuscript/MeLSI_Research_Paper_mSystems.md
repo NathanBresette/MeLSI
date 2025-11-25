@@ -3,7 +3,7 @@
 **Nathan Bresette**$^{1,2}$, **Aaron C. Ericsson**$^{3,4}$, **Carter Woods**$^{1}$, **Ai-Ling Lin**$^{1,2,5,6}$
 
 \footnotesize
-AUTHOR AFFILIATIONS See affiliation list [here](#author-affiliations).
+AUTHOR AFFILIATIONS See affiliation list [\textcolor{blue}{\underline{here}}](#author-affiliations).
 \normalsize
 
 ## ABSTRACT
