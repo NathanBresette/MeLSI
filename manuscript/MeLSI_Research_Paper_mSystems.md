@@ -1,14 +1,10 @@
 # MeLSI: Metric Learning for Statistical Inference in Microbiome Community Composition Analysis
 
-Nathan Bresette^1, Aaron Ericsson^2, Carter Woods^3, Ai-Ling Lin^4
+**Nathan Bresette**$^{1,2}$, **Aaron Ericsson**$^{3,4}$, **Carter Woods**$^{1}$, **Ai-Ling Lin**$^{1,2,5,6}$
 
-^1 [Affiliation to be added]
-
-^2 [Affiliation to be added]
-
-^3 [Affiliation to be added]
-
-^4 [Affiliation to be added]
+\footnotesize
+AUTHOR AFFILIATIONS See affiliation list [here](#author-affiliations).
+\normalsize
 
 ## ABSTRACT
 
@@ -397,21 +393,21 @@ These results suggest that conservative pre-filtering provides modest computatio
 
 A major advantage of MeLSI is its provision of interpretable feature importance weights. For the Atlas1006 dataset, the learned metric assigned highest weights to genera in the families Bacteroidaceae, Lachnospiraceae, and Ruminococcaceae, taxonomic groups previously associated with sex differences in gut microbiome composition (30, 31). Figure 1 displays the top 15 taxa by learned feature weight, illustrating the clear hierarchical importance structure that MeLSI recovers.
 
-**Figure 1. Feature Importance Weights for Atlas1006 Dataset**
+![](figures/atlas1006_vip_combined.png)
 
-Top 15 microbial taxa ranked by MeLSI feature weights. Higher weights indicate taxa that contribute more to distinguishing male versus female microbiome composition. Taxa from Bacteroidaceae, Lachnospiraceae, and Ruminococcaceae families show the strongest contributions.
-
-![Figure 1: Atlas1006 VIP](figures/atlas1006_vip.png)
+\footnotesize
+**Figure 1.** Feature Importance Weights for Atlas1006 Dataset. Side-by-side comparison of top 15 microbial taxa ranked by MeLSI feature weights. Left panel shows feature weights without directionality information. Right panel shows the same features colored by directionality, indicating which group (male or female) has higher mean abundance for each taxon. Higher weights indicate taxa that contribute more to distinguishing male versus female microbiome composition. Taxa from Bacteroidaceae, Lachnospiraceae, and Ruminococcaceae families show the strongest contributions. The directionality coloring reveals that different taxa are enriched in different groups, providing biological insight into how male and female microbiomes differ.
+\normalsize
 
 The diagonal elements of the learned metric matrix M directly represent feature importance: higher values indicate taxa that contribute more to group separation. Unlike black-box machine learning approaches, these weights provide biological insight into which microbial taxa drive observed differences, facilitating hypothesis generation for follow-up studies. MeLSI automatically calculates directionality information, indicating which group has higher mean abundance for each taxon, along with log2 fold-change values. This directionality information is included in the analysis results and can be visualized in feature importance plots, providing a complete picture of both which taxa drive group separation and how they differ between groups.
 
 To visualize how the learned metric separates groups, we applied Principal Coordinates Analysis (PCoA) using the MeLSI-learned distance matrix on Atlas1006. Figure 2 shows clear separation between male and female samples along the first principal coordinate, which explains the majority of variance. The ellipses (68% confidence intervals) demonstrate modest but consistent group separation, consistent with MeLSI's significant F-statistic (F = 5.141, p = 0.005).
 
-**Figure 2. PCoA Ordination Using MeLSI Distance for Atlas1006 Dataset**
+![](figures/atlas1006_pcoa.png)
 
-Principal Coordinates Analysis using the MeLSI-learned distance metric on Atlas1006 data. Points represent individual samples colored by sex (male/female). Dashed ellipses show 68% confidence intervals. The learned metric achieves visible separation along PCoA1 (18.4% of variance), consistent with the significant PERMANOVA result.
-
-![Figure 2: Atlas1006 PCoA](figures/atlas1006_pcoa.png)
+\footnotesize
+**Figure 2.** PCoA Ordination Using MeLSI Distance for Atlas1006 Dataset. Principal Coordinates Analysis using the MeLSI-learned distance metric on Atlas1006 data. Points represent individual samples colored by sex (male/female). Dashed ellipses show 68% confidence intervals. The learned metric achieves visible separation along PCoA1 (18.4% of variance), consistent with the significant PERMANOVA result.
+\normalsize
 
 Akkermansia and Oxalobacter (among the highest-weighted taxa on DietSwap) have documented roles in diet-induced mucin degradation and bile acid metabolism, reinforcing that MeLSI pinpoints biologically plausible drivers of community shifts. Together, the VIP and PCoA visualizations demonstrate MeLSI's dual utility: statistically rigorous hypothesis testing combined with interpretable feature weighting and ordination for biological insight.
 
@@ -464,6 +460,24 @@ Aaron Ericsson: [To be added]
 Carter Woods: [To be added]
 
 Ai-Ling Lin: [To be added]
+
+## AUTHOR AFFILIATIONS {#author-affiliations}
+
+$^{1}$ Roy Blunt NextGen Precision Health, University of Missouri, Columbia, Missouri, USA.
+
+$^{2}$ Institute for Data Science and Informatics, University of Missouri, Columbia, Missouri, USA.
+
+$^{3}$ Bioinformatics and Analytics Core, University of Missouri, Columbia, Missouri, USA.
+
+$^{4}$ Department of Veterinary Pathobiology, University of Missouri, Columbia, Missouri, USA.
+
+$^{5}$ Department of Radiology, University of Missouri, Columbia, Missouri, USA.
+
+$^{6}$ Division of Biological Sciences, University of Missouri, Columbia, Missouri, USA.
+
+## DATA AVAILABILITY
+
+MeLSI is freely available at https://github.com/NathanBresette/MeLSI under the MIT license. All validation data and analysis scripts are included in the package repository. The Atlas1006 and DietSwap datasets are available through the R microbiome package (https://microbiome.github.io/).
 
 ## REFERENCES
 
@@ -532,7 +546,3 @@ Ai-Ling Lin: [To be added]
 32. Kruskal JB. 1964. Nonmetric multidimensional scaling: a numerical method. Psychometrika 29:115-129.
 
 33. Clarke KR. 1993. Non-parametric multivariate analyses of changes in community structure. Aust J Ecol 18:117-143.
-
-## DATA AVAILABILITY
-
-MeLSI is freely available at https://github.com/NathanBresette/MeLSI under the MIT license. All validation data and analysis scripts are included in the package repository. The Atlas1006 and DietSwap datasets are available through the R microbiome package (https://microbiome.github.io/).
