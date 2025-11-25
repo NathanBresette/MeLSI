@@ -58,9 +58,9 @@ This paper presents the MeLSI framework, comprehensive validation results, and d
 
 1. Apply conservative pre-filtering to focus on high-variance features
 2. For each of B weak learners:
- - Bootstrap sample the data
- - Subsample features
- - Optimize metric matrix M via gradient descent
+    - Bootstrap sample the data
+    - Subsample features
+    - Optimize metric matrix M via gradient descent
 3. Combine weak learners via performance-weighted ensemble averaging
 4. Compute robust distance matrix using eigenvalue decomposition
 
