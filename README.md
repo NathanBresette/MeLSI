@@ -2,10 +2,12 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![R](https://img.shields.io/badge/R-4.0+-blue.svg)](https://www.r-project.org/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17714848.svg)](https://doi.org/10.5281/zenodo.17714848)
+[![Paper](https://img.shields.io/badge/Paper-mSystems-blue)](https://journals.asm.org/journal/msystems)
 
 ## Overview
 
-**MeLSI** (Metric Learning for Statistical Inference) is a novel machine learning method that solves a fundamental problem in microbiome analysis: **traditional distance metrics are fixed and generic, missing biologically meaningful patterns in your data**.
+**MeLSI** (Metric Learning for Statistical Inference) is a novel machine learning framework for microbiome beta diversity analysis that solves a fundamental problem: **traditional distance metrics are fixed and generic, missing biologically meaningful patterns in your data**. MeLSI learns adaptive distance metrics optimized for your specific dataset while maintaining rigorous statistical validity through permutation testing.
 
 ### The Problem
 
@@ -95,7 +97,9 @@ Results include:
 - **F-statistic**: How well groups are separated (higher = better)
 - **P-value**: Statistical significance (permutation-based, more reliable)
 - **Feature importance weights**: Which taxa matter most - automatically displayed as VIP charts
-- **Top features**: Displayed in console with their learned weights
+- **Directionality information**: Indicates which group has higher abundance for each important taxon (NEW!)
+- **Log2 fold-change values**: Quantitative differences between groups (NEW!)
+- **Top features**: Displayed in console with their learned weights and directionality
 - **Multiple testing correction**: Automatic FDR correction for multi-group comparisons
 - **Diagnostics**: Quality metrics to ensure reliable results
 
@@ -199,6 +203,24 @@ top_10 <- head(sort(results$feature_weights, decreasing = TRUE), 10)
 for (i in 1:length(top_10)) {
     cat(sprintf("  %2d. %-30s (weight: %.4f)\n", i, names(top_10)[i], top_10[i]))
 }
+
+# Access directionality information (NEW!)
+cat("\nDirectionality information:\n")
+if (!is.null(results$directionality)) {
+    dir_df <- data.frame(
+        Taxon = names(results$directionality),
+        Higher_in = results$directionality,
+        Weight = results$feature_weights[names(results$directionality)]
+    )
+    print(head(dir_df[order(-dir_df$Weight), ], 10))
+}
+
+# Access log2 fold-changes (NEW!)
+if (!is.null(results$log2_fold_change)) {
+    cat("\nLog2 fold-changes for top taxa:\n")
+    top_fc <- head(sort(abs(results$log2_fold_change), decreasing = TRUE), 5)
+    print(results$log2_fold_change[names(top_fc)])
+}
 ```
 
 ### Multi-Group Analysis (3+ groups)
@@ -273,9 +295,10 @@ print(results$pairwise$summary_table)
 - **Adaptive**: Learns what matters for your specific data, not generic patterns
 - **Robust**: Ensemble approach prevents overfitting and improves generalization  
 - **Interpretable**: Feature weights reveal which taxa drive group differences - automatically visualized with VIP charts
-- **Validated**: Permutation testing ensures statistical reliability
+- **Directional**: Automatically determines which group has higher abundance for each important taxon (NEW!)
+- **Validated**: Permutation testing ensures statistical reliability and proper Type I error control
 - **Efficient**: Pre-filtering focuses computation on relevant features
-- **User-friendly**: Automatic feature importance visualization shows exactly which taxa matter most
+- **User-friendly**: Automatic feature importance visualization with directionality coloring shows exactly which taxa matter most and how they differ
 
 ## Options
 
@@ -437,15 +460,31 @@ If you have questions, please direct them to the [MeLSI Issues](https://github.c
 
 If you use MeLSI in your research, please cite:
 
+**Manuscript (In Preparation for mSystems):**
 ```bibtex
-@software{melsi2025,
+@article{bresette2025melsi,
   title={MeLSI: Metric Learning for Statistical Inference in Microbiome Community Composition Analysis},
-  author={Bresette, Nathan and Ericsson, Aaron and Woods, Carter and Lin, Ai-Ling},
+  author={Bresette, Nathan and Ericsson, Aaron C. and Woods, Carter and Lin, Ai-Ling},
+  journal={mSystems},
+  year={2025},
+  note={In preparation},
+  doi={[To be added upon publication]}
+}
+```
+
+**Software:**
+```bibtex
+@software{melsi_software,
+  title={MeLSI: Metric Learning for Statistical Inference in Microbiome Analysis},
+  author={Bresette, Nathan and Ericsson, Aaron C. and Woods, Carter and Lin, Ai-Ling},
   year={2025},
   url={https://github.com/NathanBresette/MeLSI},
+  doi={10.5281/zenodo.17714848},
   note={Novel machine learning framework for microbiome beta diversity analysis}
 }
 ```
+
+*Note: DOIs will be updated upon publication and Zenodo archival*
 
 ## License
 
@@ -453,4 +492,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-*MeLSI: Advancing microbiome beta diversity analysis through adaptive metric learning and interpretable feature importance*
+## Manuscript
+
+The MeLSI methodology and comprehensive validation are described in detail in our manuscript currently in preparation for mSystems (American Society for Microbiology). The manuscript includes:
+
+- Complete mathematical framework and algorithmic details
+- Comprehensive validation across synthetic and real datasets
+- Type I error control and statistical power analysis
+- Scalability, parameter sensitivity, and computational performance evaluation
+- Biological interpretability case studies with Atlas1006 and DietSwap datasets
+
+All analyses presented in the manuscript are fully reproducible using the scripts provided in the `reproducibility_scripts/` directory.
+
+---
+
+*MeLSI: Advancing microbiome beta diversity analysis through adaptive metric learning, interpretable feature importance, and rigorous statistical inference*
