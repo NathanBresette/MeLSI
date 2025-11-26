@@ -23,6 +23,8 @@
 #' @return For 2 groups or pairwise analysis: List with F-statistic, p-value, feature weights, etc.
 #'         For 3+ groups: List containing omnibus results, pairwise results, or both.
 #'
+#' @importFrom stats var aov as.dist dist p.adjust rpois setNames t.test
+#' @importFrom utils combn flush.console
 #' @export
 melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0.8, 
                  show_progress = TRUE, plot_vip = TRUE, correction_method = "BH") {
