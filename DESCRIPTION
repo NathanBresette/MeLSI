@@ -13,10 +13,8 @@ Depends: R (>= 4.0.0)
 Imports: 
     vegan,
     ggplot2,
-    dplyr,
-    GUniFrac,
     stats,
-    methods
+    utils
 Suggests: 
     testthat,
     knitr,
