@@ -4,7 +4,7 @@
 \alias{plot_vip}
 \title{Plot VIP from MeLSI Results (User-Friendly Wrapper)}
 \usage{
-plot_vip(melsi_results, top_n = 15, title = NULL)
+plot_vip(melsi_results, top_n = 15, title = NULL, directionality = TRUE)
 }
 \arguments{
 \item{melsi_results}{Results object from melsi() function}
@@ -12,24 +12,29 @@ plot_vip(melsi_results, top_n = 15, title = NULL)
 \item{top_n}{Number of top features to display (default: 15)}
 
 \item{title}{Optional custom title for the plot}
+
+\item{directionality}{Whether to include directionality coloring (default: TRUE)}
 }
 \value{
 A ggplot2 object (invisibly)
 }
 \description{
 Simplified function to plot Variable Importance (VIP) directly from MeLSI results.
-Automatically extracts feature weights and directionality information.
+Automatically extracts feature weights and optionally includes directionality information.
 }
 \examples{
 \dontrun{
   # Run MeLSI analysis
   results <- melsi(X, y)
   
-  # Plot VIP with directionality (automatic!)
+  # Plot VIP with directionality (default)
   plot_vip(results)
   
-  # Show top 20 features
-  plot_vip(results, top_n = 20)
+  # Plot VIP without directionality
+  plot_vip(results, directionality = FALSE)
+  
+  # Show top 20 features with directionality
+  plot_vip(results, top_n = 20, directionality = TRUE)
   
   # Custom title
   plot_vip(results, title = "My Custom VIP Plot")
