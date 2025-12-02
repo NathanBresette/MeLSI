@@ -997,10 +997,22 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
     
     # Create ggplot with or without directionality coloring
     if (!is.null(directionality_labels) && !is.null(directionality_colors)) {
+        # Create proper color mapping for scale_fill_manual
+        # Map each unique group to its corresponding color
+        unique_groups <- unique(directionality_labels)
+        # Get the color for the first occurrence of each unique group
+        color_map <- stats::setNames(
+            sapply(unique_groups, function(g) {
+                idx <- which(directionality_labels == g)[1]
+                directionality_colors[idx]
+            }),
+            unique_groups
+        )
+        
         # Plot with directionality colors
         p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = Weight, y = Feature, fill = Directionality)) +
             ggplot2::geom_col() +
-            ggplot2::scale_fill_manual(values = setNames(directionality_colors, unique(directionality_labels)),
+            ggplot2::scale_fill_manual(values = color_map,
                                       name = "Higher in") +
             ggplot2::geom_text(ggplot2::aes(label = sprintf("%.3f", Weight)), 
                               hjust = -0.1, size = 3) +
