@@ -135,7 +135,28 @@ MeLSI generates several types of output:
 - Scalability and parameter sensitivity results
 - Biological validation results
 
-## Run a demo
+## Quick Start (3 lines of code!)
+
+The easiest way to use MeLSI:
+
+```r
+library(MeLSI)
+
+# Your microbiome data: X = counts (samples × taxa), y = group labels
+X_clr <- clr_transform(X)  # CLR transformation (recommended)
+results <- melsi(X_clr, y)   # Run analysis - VIP plot auto-generated with directionality!
+plot_pcoa(results, X_clr, y)  # PCoA plot
+
+# That's it! Results include F-statistic, p-value, and feature importance
+```
+
+### Key improvements for ease of use:
+- `clr_transform()` — One-line CLR transformation
+- `plot_vip(results)` — Auto-includes directionality coloring (no extra parameters!)
+- `plot_pcoa(results, X, y)` — Easy PCoA plotting from results
+- Directionality information automatically calculated and displayed
+
+## Detailed Examples
 
 ### Pairwise Analysis (2 groups)
 ```r
@@ -181,45 +202,34 @@ y <- c(rep("Control", n_samples/2), rep("Treatment", n_samples/2))
 # Add signal to first 10 taxa in Treatment group (simulate differential abundance)
 X[31:60, 1:10] <- X[31:60, 1:10] * 1.5
 
-# CLR transformation (recommended for microbiome data)
-X_clr <- log(X + 1)
-X_clr <- X_clr - rowMeans(X_clr)
+# CLR transformation (recommended for microbiome data) - NOW EASIER!
+X_clr <- clr_transform(X)
 
-# IMPORTANT: Preserve column names after transformation
-colnames(X_clr) <- colnames(X)
+# Run MeLSI analysis - VIP plot with directionality is auto-generated!
+results <- melsi(X_clr, y, n_perms = 200, B = 30, show_progress = TRUE)
 
-# Run MeLSI analysis (automatically detects 2 groups)
-results <- melsi(X_clr, y, n_perms = 200, B = 30, m_frac = 0.8, show_progress = TRUE)
-
-# Display results
+# Display results summary
 cat("MeLSI Results:\n")
 cat(sprintf("F-statistic: %.4f\n", results$F_observed))
 cat(sprintf("P-value: %.4f\n", results$p_value))
 cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 
-# Access feature importance weights with actual taxonomic names
-cat("\nTop 10 most important taxa:\n")
-top_10 <- head(sort(results$feature_weights, decreasing = TRUE), 10)
-for (i in 1:length(top_10)) {
-    cat(sprintf("  %2d. %-30s (weight: %.4f)\n", i, names(top_10)[i], top_10[i]))
-}
+# Create PCoA plot - NOW SUPER EASY!
+plot_pcoa(results, X_clr, y)
 
-# Access directionality information (NEW!)
-cat("\nDirectionality information:\n")
+# Re-plot VIP with more features (directionality is automatic!)
+plot_vip(results, top_n = 20)
+
+# Access directionality information
+cat("\nTop taxa with directionality:\n")
 if (!is.null(results$directionality)) {
     dir_df <- data.frame(
         Taxon = names(results$directionality),
         Higher_in = results$directionality,
-        Weight = results$feature_weights[names(results$directionality)]
+        Weight = results$feature_weights[names(results$directionality)],
+        Log2FC = results$log2_fold_change
     )
     print(head(dir_df[order(-dir_df$Weight), ], 10))
-}
-
-# Access log2 fold-changes (NEW!)
-if (!is.null(results$log2_fold_change)) {
-    cat("\nLog2 fold-changes for top taxa:\n")
-    top_fc <- head(sort(abs(results$log2_fold_change), decreasing = TRUE), 5)
-    print(results$log2_fold_change[names(top_fc)])
 }
 ```
 
