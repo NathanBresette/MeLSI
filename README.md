@@ -150,12 +150,6 @@ plot_pcoa(results, X_clr, y)  # PCoA plot
 # That's it! Results include F-statistic, p-value, and feature importance
 ```
 
-### Key improvements for ease of use:
-- `clr_transform()` — One-line CLR transformation
-- `plot_vip(results)` — Auto-includes directionality coloring (no extra parameters!)
-- `plot_pcoa(results, X, y)` — Easy PCoA plotting from results
-- Directionality information automatically calculated and displayed
-
 ## Detailed Examples
 
 ### Pairwise Analysis (2 groups)
