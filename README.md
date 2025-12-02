@@ -96,8 +96,8 @@ Results include:
 - **F-statistic**: How well groups are separated (higher = better)
 - **P-value**: Statistical significance (permutation-based, more reliable)
 - **Feature importance weights**: Which taxa matter most - automatically displayed as VIP charts
-- **Directionality information**: Indicates which group has higher abundance for each important taxon (NEW!)
-- **Log2 fold-change values**: Quantitative differences between groups (NEW!)
+- **Directionality information**: Indicates which group has higher abundance for each important taxon
+- **Log2 fold-change values**: Quantitative differences between groups
 - **Top features**: Displayed in console with their learned weights and directionality
 - **Multiple testing correction**: Automatic FDR correction for multi-group comparisons
 - **Diagnostics**: Quality metrics to ensure reliable results
@@ -297,7 +297,7 @@ print(results$pairwise$summary_table)
 - **Adaptive**: Learns what matters for your specific data, not generic patterns
 - **Robust**: Ensemble approach prevents overfitting and improves generalization  
 - **Interpretable**: Feature weights reveal which taxa drive group differences - automatically visualized with VIP charts
-- **Directional**: Automatically determines which group has higher abundance for each important taxon (NEW!)
+- **Directional**: Automatically determines which group has higher abundance for each important taxon
 - **Validated**: Permutation testing ensures statistical reliability and proper Type I error control
 - **Efficient**: Pre-filtering focuses computation on relevant features
 - **User-friendly**: Automatic feature importance visualization with directionality coloring shows exactly which taxa matter most and how they differ
