@@ -182,8 +182,11 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
             }
         
         # Calculate fold change and log2 fold change
-        fold_change <- mean_group1 / (mean_group2 + 1e-10)
+        # Add small epsilon to both to avoid division issues and ensure positive values for log2
+        fold_change <- (mean_group1 + 1e-10) / (mean_group2 + 1e-10)
         log2_fold_change <- log2(fold_change)
+        # Replace any NaN or Inf values with 0
+        log2_fold_change[!is.finite(log2_fold_change)] <- 0
         names(log2_fold_change) <- colnames(X_filtered)
         
         # Store mean abundances
@@ -601,8 +604,10 @@ calculate_mahalanobis_dist_robust <- function(X, M) {
     eigen_M <- eigen(M)
     eigen_M$values <- pmax(eigen_M$values, 1e-6)  # Ensure positive eigenvalues
     
-    # Compute M^(-1/2) safely
-    M_half_inv <- eigen_M$vectors %*% diag(1/sqrt(eigen_M$values)) %*% t(eigen_M$vectors)
+    # Compute M^(-1/2) safely - handle potential NaN/Inf from sqrt
+    sqrt_eigenvals <- sqrt(eigen_M$values)
+    sqrt_eigenvals[!is.finite(sqrt_eigenvals)] <- 1e-3  # Replace NaN/Inf with small value
+    M_half_inv <- eigen_M$vectors %*% diag(1/sqrt_eigenvals) %*% t(eigen_M$vectors)
     
     # Transform data
     Y <- X %*% M_half_inv

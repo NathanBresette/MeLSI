@@ -6,7 +6,7 @@
 
 ## Overview
 
-**MeLSI** (Metric Learning for Statistical Inference) is a novel machine learning framework for microbiome beta diversity analysis that solves a fundamental problem: **traditional distance metrics are fixed and generic, missing biologically meaningful patterns in your data**. MeLSI learns adaptive distance metrics optimized for your specific dataset while maintaining rigorous statistical validity through permutation testing.
+**MeLSI** (Metric Learning for Statistical Inference) is a machine learning framework for microbiome beta diversity analysis that solves a fundamental problem: **traditional distance metrics are fixed and generic, missing biologically meaningful patterns in your data**. MeLSI learns adaptive distance metrics optimized for your specific dataset while maintaining rigorous statistical validity through permutation testing.
 
 ### The Problem
 
