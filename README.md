@@ -3,7 +3,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![R](https://img.shields.io/badge/R-4.0+-blue.svg)](https://www.r-project.org/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17714848.svg)](https://doi.org/10.5281/zenodo.17714848)
-[![Paper](https://img.shields.io/badge/Paper-mSystems-blue)](https://journals.asm.org/journal/msystems)
 
 ## Overview
 
@@ -321,20 +320,6 @@ print(results$pairwise$summary_table)
 - `filter_threshold` (default 0.1): Threshold for pre-filtering feature selection
 - `max_iterations` (default 50): Maximum iterations for weak learner optimization
 
-## Reproducibility
-
-All results in the research paper are fully reproducible. The `reproducibility_scripts/` directory contains standalone R scripts for generating each table:
-
-- `table1_type1_error.R` - Type I error control analysis
-- `table2_power_analysis.R` - Method comparison on synthetic and real datasets
-- `table2_dietswap.R` - DietSwap-specific analysis
-- `table3_scalability.R` - Scalability analysis across sample sizes
-- `table4_parameter_sensitivity.R` - Parameter sensitivity analysis
-- `table5_prefiltering.R` - Pre-filtering benefit analysis
-- `run_all_tables.R` - Master script to run all analyses
-
-Each script is self-contained, uses `set.seed(42)` for reproducibility, and generates CSV outputs. See `reproducibility_scripts/README.md` for detailed instructions.
-
 ## Troubleshooting
 
 **Question**: When I run MeLSI I see convergence warnings. Is this normal?
@@ -365,50 +350,16 @@ If you have questions, please direct them to the [MeLSI Issues](https://github.c
 
 If you use MeLSI in your research, please cite:
 
-**Manuscript (In Preparation for mSystems):**
-```bibtex
-@article{bresette2025melsi,
-  title={MeLSI: Metric Learning for Statistical Inference in Microbiome Community Composition Analysis},
-  author={Bresette, Nathan and Ericsson, Aaron C. and Woods, Carter and Lin, Ai-Ling},
-  journal={mSystems},
-  year={2025},
-  note={In preparation},
-  doi={[To be added upon publication]}
-}
-```
-
-**Software:**
 ```bibtex
 @software{melsi_software,
   title={MeLSI: Metric Learning for Statistical Inference in Microbiome Analysis},
   author={Bresette, Nathan and Ericsson, Aaron C. and Woods, Carter and Lin, Ai-Ling},
   year={2025},
   url={https://github.com/NathanBresette/MeLSI},
-  doi={10.5281/zenodo.17714848},
-  note={Novel machine learning framework for microbiome beta diversity analysis}
+  doi={10.5281/zenodo.17714848}
 }
 ```
-
-*Note: DOIs will be updated upon publication and Zenodo archival*
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Manuscript
-
-The MeLSI methodology and comprehensive validation are described in detail in our manuscript currently in preparation for mSystems (American Society for Microbiology). The manuscript includes:
-
-- Complete mathematical framework and algorithmic details
-- Comprehensive validation across synthetic and real datasets
-- Type I error control and statistical power analysis
-- Scalability, parameter sensitivity, and computational performance evaluation
-- Biological interpretability case studies with Atlas1006 and DietSwap datasets
-
-All analyses presented in the manuscript are fully reproducible using the scripts provided in the `reproducibility_scripts/` directory.
-
----
-
-*MeLSI: Advancing microbiome beta diversity analysis through adaptive metric learning, interpretable feature importance, and rigorous statistical inference*

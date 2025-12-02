@@ -239,7 +239,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     }
     
     # Calculate distance matrix for PCoA plotting
-    distance_matrix <- robust_distance_calculation(X_filtered, M_observed)
+    distance_matrix <- calculate_mahalanobis_dist_robust(X_filtered, M_observed)
     
     # Return results - directionality should always be included for 2-group analysis
     # (will be NULL for multi-group, but should be a named vector for 2 groups)
@@ -385,7 +385,7 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
     }
     
     # Calculate distance matrix for PCoA plotting
-    distance_matrix <- robust_distance_calculation(X_filtered, M_observed)
+    distance_matrix <- calculate_mahalanobis_dist_robust(X_filtered, M_observed)
     
     return(list(
         F_observed = F_observed,
