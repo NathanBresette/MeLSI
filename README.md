@@ -45,10 +45,8 @@ MeLSI depends on the following R packages (automatically installed):
 **Core Dependencies:**
 - `vegan` - Community ecology package for PERMANOVA calculations
 - `ggplot2` - Graphics and visualization
-- `dplyr` - Data manipulation
-- `GUniFrac` - Phylogenetic distance calculations
 - `stats` - Statistical functions (base R)
-- `methods` - S4 methods (base R)
+- `utils` - Utility functions (base R)
 
 **Optional Dependencies:**
 - `phyloseq` - Microbiome data structures (via BiocManager)
@@ -75,7 +73,7 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install(c("phyloseq", "microbiome"))
 
 # Install CRAN packages
-install.packages(c("vegan", "ggplot2", "dplyr", "GUniFrac"))
+install.packages(c("vegan", "ggplot2"))
 
 # Install MeLSI from GitHub
 devtools::install_github("NathanBresette/MeLSI")
@@ -117,14 +115,16 @@ MeLSI requires microbiome count data formatted as:
 - Should be factors with meaningful group names
 - Must match the order of samples in the abundance data
 
-### Output files
+### Output structure
 
-MeLSI generates several types of output:
+MeLSI returns a results object containing:
 
 **Statistical Results**
 - F-statistic: Test statistic for group differences
 - P-value: Permutation-based p-value
-- Learned metric: Matrix of learned feature weights
+- Feature weights: Learned importance weights for each taxon
+- Directionality: Which group has higher abundance for each taxon
+- Distance matrix: Learned distance matrix for PCoA plotting
 - Null distribution: F-statistics from permuted data
 - Diagnostics: Method performance metrics
 
@@ -191,7 +191,7 @@ y <- c(rep("Control", n_samples/2), rep("Treatment", n_samples/2))
 # Add signal to first 10 taxa in Treatment group (simulate differential abundance)
 X[31:60, 1:10] <- X[31:60, 1:10] * 1.5
 
-# CLR transformation (recommended for microbiome data) - NOW EASIER!
+# CLR transformation (recommended for microbiome data)
 X_clr <- clr_transform(X)
 
 # Run MeLSI analysis - VIP plot with directionality is auto-generated!
@@ -203,7 +203,7 @@ cat(sprintf("F-statistic: %.4f\n", results$F_observed))
 cat(sprintf("P-value: %.4f\n", results$p_value))
 cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 
-# Create PCoA plot - NOW SUPER EASY!
+# Create PCoA plot
 plot_pcoa(results, X_clr, y)
 
 # Re-plot VIP with more features (directionality on by default)
@@ -267,11 +267,7 @@ X[61:90, 1:10] <- X[61:90, 1:10] * 1.7    # Moderate
 X[91:120, 1:10] <- X[91:120, 1:10] * 2.0  # Severe
 
 # CLR transformation
-X_clr <- log(X + 1)
-X_clr <- X_clr - rowMeans(X_clr)
-
-# IMPORTANT: Preserve column names after transformation
-colnames(X_clr) <- colnames(X)
+X_clr <- clr_transform(X)
 
 # Run MeLSI analysis (automatically detects 4 groups and runs both omnibus and pairwise)
 results <- melsi(X_clr, y, n_perms = 200, B = 30, show_progress = TRUE)
@@ -347,7 +343,7 @@ print(results$pairwise$summary_table)
 **Answer**: Some convergence warnings are normal, especially with small datasets. Check the diagnostics output for condition numbers and eigenvalue ranges.
 
 **Question**: MeLSI is running slowly on my large dataset. How can I speed it up?
-**Answer**: Reduce the number of permutations (`n_perms`), ensemble size (`B`), or enable pre-filtering (`pre_filter = TRUE`).
+**Answer**: Reduce the number of permutations (`n_perms`) or ensemble size (`B`). Pre-filtering is automatically applied to improve efficiency.
 
 **Question**: How do I interpret the learned metric weights?
 **Answer**: Higher weights indicate taxa that contribute more to group separation. MeLSI automatically displays the top 5 most important features and generates VIP charts showing feature importance. For multi-group analysis, you get both global feature importance (omnibus) and comparison-specific importance (pairwise). Access all weights via `results$feature_weights` or `results$omnibus$feature_weights` and `results$pairwise$pairwise_results`.
