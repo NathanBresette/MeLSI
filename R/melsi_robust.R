@@ -1053,11 +1053,12 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
 #' Plot VIP from MeLSI Results (User-Friendly Wrapper)
 #'
 #' Simplified function to plot Variable Importance (VIP) directly from MeLSI results.
-#' Automatically extracts feature weights and directionality information.
+#' Automatically extracts feature weights and optionally includes directionality information.
 #'
 #' @param melsi_results Results object from melsi() function
 #' @param top_n Number of top features to display (default: 15)
 #' @param title Optional custom title for the plot
+#' @param directionality Whether to include directionality coloring (default: TRUE)
 #'
 #' @return A ggplot2 object (invisibly)
 #'
@@ -1066,18 +1067,21 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
 #'   # Run MeLSI analysis
 #'   results <- melsi(X, y)
 #'   
-#'   # Plot VIP with directionality (automatic!)
+#'   # Plot VIP with directionality (default)
 #'   plot_vip(results)
 #'   
-#'   # Show top 20 features
-#'   plot_vip(results, top_n = 20)
+#'   # Plot VIP without directionality
+#'   plot_vip(results, directionality = FALSE)
+#'   
+#'   # Show top 20 features with directionality
+#'   plot_vip(results, top_n = 20, directionality = TRUE)
 #'   
 #'   # Custom title
 #'   plot_vip(results, title = "My Custom VIP Plot")
 #' }
 #'
 #' @export
-plot_vip <- function(melsi_results, top_n = 15, title = NULL) {
+plot_vip <- function(melsi_results, top_n = 15, title = NULL, directionality = TRUE) {
     
     # Check if results is valid
     if (is.null(melsi_results) || !is.list(melsi_results)) {
@@ -1091,15 +1095,18 @@ plot_vip <- function(melsi_results, top_n = 15, title = NULL) {
     
     feature_weights <- melsi_results$feature_weights
     
-    # Extract directionality (automatically included!)
-    directionality <- melsi_results$directionality
+    # Extract directionality if requested
+    directionality_data <- NULL
+    if (directionality) {
+        directionality_data <- melsi_results$directionality
+    }
     
-    # Call the underlying plot function with auto-extracted parameters
+    # Call the underlying plot function
     plot_feature_importance(
         feature_weights = feature_weights,
         top_n = top_n,
         main_title = title,
-        directionality = directionality  # Automatically passed!
+        directionality = directionality_data
     )
 }
 
