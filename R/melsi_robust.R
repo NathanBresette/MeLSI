@@ -164,15 +164,15 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         
         # Ensure we have valid indices
         if (length(group1_idx) > 0 && length(group2_idx) > 0) {
-            # Calculate mean abundances for each group
-            mean_group1 <- colMeans(X_filtered[group1_idx, , drop = FALSE])
-            mean_group2 <- colMeans(X_filtered[group2_idx, , drop = FALSE])
-            
+        # Calculate mean abundances for each group
+        mean_group1 <- colMeans(X_filtered[group1_idx, , drop = FALSE])
+        mean_group2 <- colMeans(X_filtered[group2_idx, , drop = FALSE])
+        
             # Determine directionality - ensure it's always a character vector with names
-            directionality_info <- ifelse(mean_group1 > mean_group2, 
+        directionality_info <- ifelse(mean_group1 > mean_group2, 
                                           paste0("Higher in ", as.character(groups[1])), 
                                           paste0("Higher in ", as.character(groups[2])))
-            names(directionality_info) <- colnames(X_filtered)
+        names(directionality_info) <- colnames(X_filtered)
             
             # Verify directionality was created correctly
             if (is.null(directionality_info) || length(directionality_info) == 0) {
@@ -180,19 +180,19 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
                 directionality_info <- rep("Unknown", ncol(X_filtered))
                 names(directionality_info) <- colnames(X_filtered)
             }
-            
-            # Calculate fold change and log2 fold change
-            fold_change <- mean_group1 / (mean_group2 + 1e-10)
-            log2_fold_change <- log2(fold_change)
-            names(log2_fold_change) <- colnames(X_filtered)
-            
-            # Store mean abundances
-            mean_abundances <- list(
-                group1 = mean_group1,
-                group2 = mean_group2,
-                group1_name = as.character(groups[1]),
-                group2_name = as.character(groups[2])
-            )
+        
+        # Calculate fold change and log2 fold change
+        fold_change <- mean_group1 / (mean_group2 + 1e-10)
+        log2_fold_change <- log2(fold_change)
+        names(log2_fold_change) <- colnames(X_filtered)
+        
+        # Store mean abundances
+        mean_abundances <- list(
+            group1 = mean_group1,
+            group2 = mean_group2,
+            group1_name = as.character(groups[1]),
+            group2_name = as.character(groups[2])
+        )
         } else {
             warning("Invalid group indices. Cannot calculate directionality.")
         }
@@ -238,6 +238,9 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         })
     }
     
+    # Calculate distance matrix for PCoA plotting
+    distance_matrix <- robust_distance_calculation(X_filtered, M_observed)
+    
     # Return results - directionality should always be included for 2-group analysis
     # (will be NULL for multi-group, but should be a named vector for 2 groups)
     return(list(
@@ -249,6 +252,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         mean_abundances = mean_abundances,
         log2_fold_change = log2_fold_change,
         metric_matrix = M_observed,
+        distance_matrix = distance_matrix,  # For PCoA plotting
         diagnostics = list(
             n_features_used = ncol(X_filtered),
             n_permutations = n_perms,
@@ -380,6 +384,9 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         })
     }
     
+    # Calculate distance matrix for PCoA plotting
+    distance_matrix <- robust_distance_calculation(X_filtered, M_observed)
+    
     return(list(
         F_observed = F_observed,
         p_value = p_value,
@@ -388,6 +395,7 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         directionality = directionality_info,
         mean_abundances = mean_abundances,
         metric_matrix = M_observed,
+        distance_matrix = distance_matrix,  # For PCoA plotting
         group_info = list(
             groups = groups,
             n_groups = n_groups,
@@ -1038,6 +1046,164 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
     # Print the plot
     print(p)
     
-    # Return the plot object for further customization if needed
+    # Return the plot object for further customization if needed    
     return(invisible(p))
+}
+
+#' Plot VIP from MeLSI Results (User-Friendly Wrapper)
+#'
+#' Simplified function to plot Variable Importance (VIP) directly from MeLSI results.
+#' Automatically extracts feature weights and directionality information.
+#'
+#' @param melsi_results Results object from melsi() function
+#' @param top_n Number of top features to display (default: 15)
+#' @param title Optional custom title for the plot
+#'
+#' @return A ggplot2 object (invisibly)
+#'
+#' @examples
+#' \dontrun{
+#'   # Run MeLSI analysis
+#'   results <- melsi(X, y)
+#'   
+#'   # Plot VIP with directionality (automatic!)
+#'   plot_vip(results)
+#'   
+#'   # Show top 20 features
+#'   plot_vip(results, top_n = 20)
+#'   
+#'   # Custom title
+#'   plot_vip(results, title = "My Custom VIP Plot")
+#' }
+#'
+#' @export
+plot_vip <- function(melsi_results, top_n = 15, title = NULL) {
+    
+    # Check if results is valid
+    if (is.null(melsi_results) || !is.list(melsi_results)) {
+        stop("melsi_results must be a valid MeLSI results object")
+    }
+    
+    # Extract feature weights
+    if (is.null(melsi_results$feature_weights)) {
+        stop("No feature weights found in results. Make sure you ran melsi() successfully.")
+    }
+    
+    feature_weights <- melsi_results$feature_weights
+    
+    # Extract directionality (automatically included!)
+    directionality <- melsi_results$directionality
+    
+    # Call the underlying plot function with auto-extracted parameters
+    plot_feature_importance(
+        feature_weights = feature_weights,
+        top_n = top_n,
+        main_title = title,
+        directionality = directionality  # Automatically passed!
+    )
+}
+
+#' Plot PCoA from MeLSI Results
+#'
+#' Creates a Principal Coordinates Analysis (PCoA) plot using the learned MeLSI distance matrix.
+#'
+#' @param melsi_results Results object from melsi() function
+#' @param X Original feature matrix (samples x taxa)
+#' @param y Group labels vector
+#' @param title Optional custom title for the plot (default: "PCoA using MeLSI Distance")
+#'
+#' @return A ggplot2 object (invisibly)
+#'
+#' @examples
+#' \dontrun{
+#'   # Run MeLSI analysis
+#'   results <- melsi(X_clr, y)
+#'   
+#'   # Plot PCoA (automatic!)
+#'   plot_pcoa(results, X_clr, y)
+#'   
+#'   # Custom title
+#'   plot_pcoa(results, X_clr, y, title = "My PCoA Plot")
+#' }
+#'
+#' @export
+plot_pcoa <- function(melsi_results, X, y, title = "PCoA using MeLSI Distance") {
+    
+    # Load required packages
+    if (!requireNamespace("ggplot2", quietly = TRUE)) {
+        stop("ggplot2 package is required for plotting. Please install it with: install.packages('ggplot2')")
+    }
+    
+    # Check if results has distance matrix
+    if (is.null(melsi_results$distance_matrix)) {
+        stop("No distance matrix found in results. Calculating from metric matrix...")
+    }
+    
+    dist_matrix <- melsi_results$distance_matrix
+    
+    # Run PCoA (classical MDS)
+    pcoa_result <- cmdscale(dist_matrix, k = 2, eig = TRUE)
+    
+    # Calculate variance explained
+    var_explained <- pcoa_result$eig / sum(abs(pcoa_result$eig)) * 100
+    
+    # Create plot data
+    plot_data <- data.frame(
+        PC1 = pcoa_result$points[, 1],
+        PC2 = pcoa_result$points[, 2],
+        Group = as.factor(y)
+    )
+    
+    # Create ggplot
+    p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = PC1, y = PC2, color = Group)) +
+        ggplot2::geom_point(size = 3, alpha = 0.7) +
+        ggplot2::stat_ellipse(level = 0.68, linetype = 2) +
+        ggplot2::labs(
+            title = title,
+            x = sprintf("PCoA1 (%.1f%%)", var_explained[1]),
+            y = sprintf("PCoA2 (%.1f%%)", var_explained[2])
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(
+            plot.title = ggplot2::element_text(hjust = 0.5, size = 14, face = "bold"),
+            legend.position = "right"
+        )
+    
+    print(p)
+    return(invisible(p))
+}
+
+#' CLR Transformation for Microbiome Data
+#'
+#' Applies centered log-ratio (CLR) transformation to microbiome count data.
+#' This transformation is recommended for microbiome data before running MeLSI.
+#'
+#' @param X Feature matrix (samples x taxa) with raw counts or relative abundances
+#' @param pseudocount Small constant to add before log transformation (default: 1)
+#'
+#' @return CLR-transformed matrix with preserved column names
+#'
+#' @examples
+#' \dontrun{
+#'   # Transform your microbiome data
+#'   X_clr <- clr_transform(X)
+#'   
+#'   # Then run MeLSI
+#'   results <- melsi(X_clr, y)
+#' }
+#'
+#' @export
+clr_transform <- function(X, pseudocount = 1) {
+    
+    # Add pseudocount and take log
+    X_log <- log(X + pseudocount)
+    
+    # Center by row means (CLR transformation)
+    X_clr <- X_log - rowMeans(X_log)
+    
+    # Preserve column names
+    colnames(X_clr) <- colnames(X)
+    rownames(X_clr) <- rownames(X)
+    
+    return(X_clr)
 }
