@@ -959,6 +959,21 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
                            paste0(substr(feature_names, 1, 17), "..."),
                            feature_names)
     
+    # Ensure unique feature names (in case truncation created duplicates)
+    # Add suffix to duplicates
+    if (any(duplicated(feature_names))) {
+        for (i in 1:length(feature_names)) {
+            if (sum(feature_names == feature_names[i]) > 1) {
+                # Find all occurrences of this name
+                dup_indices <- which(feature_names == feature_names[i])
+                # Keep first as-is, add numbers to others
+                for (j in 2:length(dup_indices)) {
+                    feature_names[dup_indices[j]] <- paste0(feature_names[dup_indices[j]], "_", j)
+                }
+            }
+        }
+    }
+    
     # Extract directionality for top features if provided
     directionality_colors <- NULL
     directionality_labels <- NULL
