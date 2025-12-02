@@ -137,8 +137,10 @@ library(MeLSI)
 
 # Your microbiome data: X = counts (samples × taxa), y = group labels
 X_clr <- clr_transform(X)  # CLR transformation (recommended)
-results <- melsi(X_clr, y)   # Run analysis - VIP plot auto-generated with directionality!
+results <- melsi(X_clr, y)   # Run analysis - VIP plot auto-generated!
 plot_pcoa(results, X_clr, y)  # PCoA plot
+plot_vip(results)  # VIP plot with directionality (default)
+plot_vip(results, directionality = FALSE)  # VIP plot without directionality
 
 # That's it! Results include F-statistic, p-value, and feature importance
 ```
@@ -204,8 +206,11 @@ cat(sprintf("Significant: %s\n", ifelse(results$p_value < 0.05, "Yes", "No")))
 # Create PCoA plot - NOW SUPER EASY!
 plot_pcoa(results, X_clr, y)
 
-# Re-plot VIP with more features (directionality is automatic!)
+# Re-plot VIP with more features (directionality on by default)
 plot_vip(results, top_n = 20)
+
+# Plot VIP without directionality coloring
+plot_vip(results, top_n = 20, directionality = FALSE)
 
 # Access directionality information
 cat("\nTop taxa with directionality:\n")
@@ -311,8 +316,24 @@ print(results$pairwise$summary_table)
 - `B` (default 30): Number of weak learners in the ensemble
 - `m_frac` (default 0.8): Fraction of features to use in each weak learner
 - `show_progress` (default TRUE): Whether to display progress information
-- `plot_vip` (default TRUE): Whether to automatically display Variable Importance Plot
+- `plot_vip` (default TRUE): Whether to automatically display Variable Importance Plot during analysis
 - `correction_method` (default "BH"): Multiple testing correction method for multi-group analysis
+
+### Plotting functions
+
+- `plot_vip(melsi_results, top_n = 15, title = NULL, directionality = TRUE)`: Plot Variable Importance
+  - `top_n`: Number of top features to display (default: 15)
+  - `title`: Optional custom title
+  - `directionality`: Whether to show directionality coloring (default: TRUE)
+  
+- `plot_pcoa(melsi_results, X, y, title = NULL)`: Plot Principal Coordinates Analysis
+  - `X`: Original feature matrix (samples × taxa)
+  - `y`: Group labels vector
+  - `title`: Optional custom title
+
+- `clr_transform(X, pseudocount = 1)`: Apply CLR transformation
+  - `X`: Feature matrix (samples × taxa)
+  - `pseudocount`: Small constant to add before log transformation (default: 1)
 
 ### Advanced options
 
