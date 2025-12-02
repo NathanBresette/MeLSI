@@ -129,12 +129,6 @@ MeLSI generates several types of output:
 - Null distribution: F-statistics from permuted data
 - Diagnostics: Method performance metrics
 
-**Validation Results** (when running comprehensive tests)
-- Performance comparisons with standard methods
-- Type I error and power analysis results
-- Scalability and parameter sensitivity results
-- Biological validation results
-
 ## Quick Start (3 lines of code!)
 
 The easiest way to use MeLSI:
