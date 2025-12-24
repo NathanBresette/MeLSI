@@ -368,6 +368,18 @@ If you have questions, please direct them to the [MeLSI Issues](https://github.c
 
 If you use MeLSI in your research, please cite:
 
+**Preprint:**
+```bibtex
+@article{bresette2025melsi,
+  title={MeLSI: Metric Learning for Statistical Inference in Microbiome Community Composition Analysis},
+  author={Bresette, Nathan and Ericsson, Aaron C. and Woods, Carter and Lin, Ai-Ling},
+  year={2025},
+  journal={bioRxiv},
+  doi={10.64898/2025.12.04.692328}
+}
+```
+
+**Software:**
 ```bibtex
 @software{melsi_software,
   title={MeLSI: Metric Learning for Statistical Inference in Microbiome Analysis},
