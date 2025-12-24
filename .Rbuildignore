@@ -11,3 +11,10 @@
 ^\.idea$
 ^doc$
 ^Meta$
+^manuscript$
+^reproducibility_scripts$
+^validation_scripts$
+^\.Rcheck$
+^BiocCheck
+^Rcheck
+^Rplots\.pdf$

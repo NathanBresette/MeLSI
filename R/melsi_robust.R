@@ -51,9 +51,9 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0
     
     # Validate input and ensure proper column names
     if (is.null(colnames(X)) || all(colnames(X) == "")) {
-        colnames(X) <- paste0("Feature_", 1:ncol(X))
+        colnames(X) <- paste0("Feature_", seq_len(ncol(X)))
         if (show_progress) {
-            cat("Warning: Input data has no column names. Using generic feature names.\n")
+            warning("Input data has no column names. Using generic feature names.")
         }
     }
     
@@ -76,7 +76,7 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0
     # Validate analysis type for number of groups
     if (n_groups == 2 && analysis_type %in% c("omnibus", "both")) {
         if (show_progress) {
-            cat("Only 2 groups detected. Running pairwise analysis.\n")
+            message("Only 2 groups detected. Running pairwise analysis.")
         }
         analysis_type <- "pairwise"
     }
@@ -101,19 +101,19 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0
     if (analysis_type == "both") {
         # Both omnibus and pairwise
         if (show_progress) {
-            cat("=== MeLSI Multi-Group Analysis ===\n")
-            cat("Groups:", paste(groups, collapse = ", "), "\n")
-            cat("Sample sizes:", paste(names(table(y)), ":", table(y), collapse = ", "), "\n\n")
+            message("=== MeLSI Multi-Group Analysis ===")
+            message("Groups: ", paste(groups, collapse = ", "))
+            message("Sample sizes: ", paste(names(table(y)), ":", table(y), collapse = ", "))
         }
         
         results <- list()
         
         # Run omnibus analysis
-        if (show_progress) cat("Running omnibus analysis...\n")
+        if (show_progress) message("Running omnibus analysis...")
         results$omnibus <- run_omnibus_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip)
         
         # Run pairwise analysis
-        if (show_progress) cat("\nRunning pairwise analysis...\n")
+        if (show_progress) message("Running pairwise analysis...")
         results$pairwise <- run_all_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress, 
                                                      plot_vip, correction_method)
         
@@ -127,12 +127,12 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0
 run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_vip) {
     
     if (show_progress) {
-        cat("--- Starting MeLSI Analysis ---\n")
+        message("--- Starting MeLSI Analysis ---")
     }
     
     # 1. Learn metric on observed data (with conservative pre-filtering)
     if (show_progress) {
-        cat("Learning metric on observed data...\n")
+        message("Learning metric on observed data...")
     }
     
     # Apply conservative pre-filtering
@@ -145,11 +145,11 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     
     # 2. Generate null distribution with CONSISTENT pre-filtering
     if (show_progress) {
-        cat("Generating null distribution with", n_perms, "permutations...\n")
+        message("Generating null distribution with ", n_perms, " permutations...")
     }
     F_null <- numeric(n_perms)
     
-    for (p in 1:n_perms) {
+    for (p in seq_len(n_perms)) {
         # CRITICAL: Apply same pre-filtering to permuted data
         y_permuted <- sample(y)
         X_filtered_perm <- apply_conservative_prefiltering(X, y_permuted, filter_frac = 0.7)
@@ -159,7 +159,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         F_null[p] <- calculate_permanova_F(dist_permuted, y_permuted)
         
         if (show_progress) {
-            cat("  [Permutation", p, "of", n_perms, "]\n")
+            message("  [Permutation ", p, " of ", n_perms, "]")
             flush.console()
         }
     }
@@ -222,20 +222,20 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     }
     
     if (show_progress) {
-        cat("Analysis completed!\n")
-        cat("F-statistic:", round(F_observed, 4), "\n")
-        cat("P-value:", round(p_value, 4), "\n")
-        cat("\nFeature importance: Access results$feature_weights to see which taxa\n")
-        cat("contributed most to the learned distance metric.\n")
+        message("Analysis completed!")
+        message("F-statistic: ", round(F_observed, 4))
+        message("P-value: ", round(p_value, 4))
+        message("\nFeature importance: Access results$feature_weights to see which taxa")
+        message("contributed most to the learned distance metric.")
         if (!is.null(directionality_info)) {
-            cat("Directionality: Access results$directionality to see which group has higher abundance.\n")
+            message("Directionality: Access results$directionality to see which group has higher abundance.")
         }
         
         # Show top 5 features with directionality if available
         if (length(feature_weights) >= 5) {
-            top_5_idx <- order(feature_weights, decreasing = TRUE)[1:5]
-            cat("\nTop 5 most important features:\n")
-            for (i in 1:5) {
+            top_5_idx <- order(feature_weights, decreasing = TRUE)[seq_len(5)]
+            message("\nTop 5 most important features:")
+            for (i in seq_len(5)) {
                 idx <- top_5_idx[i]
                 feature_name <- names(feature_weights)[idx]
                 if (is.null(feature_name) || feature_name == "" || is.na(feature_name)) {
@@ -245,7 +245,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
                 if (!is.null(directionality_info) && !is.null(directionality_info[idx])) {
                     direction_text <- paste0(" [", directionality_info[idx], "]")
                 }
-                cat(sprintf("  %d. %s (weight: %.4f)%s\n", i, feature_name, feature_weights[idx], direction_text))
+                message(sprintf("  %d. %s (weight: %.4f)%s", i, feature_name, feature_weights[idx], direction_text))
             }
         }
     }
@@ -256,7 +256,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
             plot_feature_importance(feature_weights, directionality = directionality_info)
         }, error = function(e) {
             if (show_progress) {
-                cat("\nNote: Could not generate VIP plot. Error:", e$message, "\n")
+                warning("Could not generate VIP plot. Error: ", e$message)
             }
         })
     }
@@ -291,21 +291,21 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
     n_groups <- length(groups)
     
     if (show_progress) {
-        cat("--- Starting MeLSI Omnibus Analysis ---\n")
-        cat("Groups:", paste(groups, collapse = ", "), "\n")
-        cat("Sample sizes:", table(y), "\n")
+        message("--- Starting MeLSI Omnibus Analysis ---")
+        message("Groups: ", paste(groups, collapse = ", "))
+        message("Sample sizes: ", paste(table(y), collapse = " "))
     }
     
     # 1. Apply conservative pre-filtering
     if (show_progress) {
-        cat("Applying conservative pre-filtering...\n")
+        message("Applying conservative pre-filtering...")
     }
     
     X_filtered <- apply_conservative_prefiltering_multi(X, y, filter_frac = 0.7)
     
     # 2. Learn global metric optimized for all group pairs
     if (show_progress) {
-        cat("Learning global metric for all group pairs...\n")
+        message("Learning global metric for all group pairs...")
     }
     
     M_observed <- learn_melsi_metric_omnibus(X_filtered, y, B = B, m_frac = m_frac)
@@ -316,12 +316,12 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
     
     # 4. Generate null distribution
     if (show_progress) {
-        cat("Generating null distribution with", n_perms, "permutations...\n")
+        message("Generating null distribution with ", n_perms, " permutations...")
     }
     
     F_null <- numeric(n_perms)
     
-    for (p in 1:n_perms) {
+    for (p in seq_len(n_perms)) {
         y_permuted <- sample(y)
         X_filtered_perm <- apply_conservative_prefiltering_multi(X, y_permuted, filter_frac = 0.7)
         
@@ -330,7 +330,7 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         F_null[p] <- calculate_permanova_F(dist_permuted, y_permuted)
         
         if (show_progress) {
-            cat("  [Permutation", p, "of", n_perms, "]\n")
+            message("  [Permutation ", p, " of ", n_perms, "]")
             flush.console()
         }
     }
@@ -366,20 +366,20 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
     }
     
     if (show_progress) {
-        cat("Omnibus analysis completed!\n")
-        cat("F-statistic:", round(F_observed, 4), "\n")
-        cat("P-value:", round(p_value, 4), "\n")
-        cat("\nGlobal feature importance: Access results$feature_weights to see which taxa\n")
-        cat("contributed most to overall group separation.\n")
+        message("Omnibus analysis completed!")
+        message("F-statistic: ", round(F_observed, 4))
+        message("P-value: ", round(p_value, 4))
+        message("\nGlobal feature importance: Access results$feature_weights to see which taxa")
+        message("contributed most to overall group separation.")
         if (!is.null(directionality_info)) {
-            cat("Directionality: Access results$directionality to see which group has highest mean abundance.\n")
+            message("Directionality: Access results$directionality to see which group has highest mean abundance.")
         }
         
         # Show top 5 features with directionality if available
         if (length(feature_weights) >= 5) {
-            top_5_idx <- order(feature_weights, decreasing = TRUE)[1:5]
-            cat("\nTop 5 globally important features:\n")
-            for (i in 1:5) {
+            top_5_idx <- order(feature_weights, decreasing = TRUE)[seq_len(5)]
+            message("\nTop 5 globally important features:")
+            for (i in seq_len(5)) {
                 idx <- top_5_idx[i]
                 feature_name <- names(feature_weights)[idx]
                 if (is.null(feature_name) || feature_name == "" || is.na(feature_name)) {
@@ -389,7 +389,7 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
                 if (!is.null(directionality_info) && !is.null(directionality_info[idx])) {
                     direction_text <- paste0(" [Highest in ", directionality_info[idx], "]")
                 }
-                cat(sprintf("  %d. %s (weight: %.4f)%s\n", i, feature_name, feature_weights[idx], direction_text))
+                message(sprintf("  %d. %s (weight: %.4f)%s", i, feature_name, feature_weights[idx], direction_text))
             }
         }
     }
@@ -402,7 +402,7 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
                                   directionality = directionality_info)
         }, error = function(e) {
             if (show_progress) {
-                cat("\nNote: Could not generate VIP plot. Error:", e$message, "\n")
+                warning("Could not generate VIP plot. Error: ", e$message)
             }
         })
     }
@@ -439,9 +439,9 @@ run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, p
     n_groups <- length(groups)
     
     if (show_progress) {
-        cat("--- Starting MeLSI Pairwise Analysis ---\n")
-        cat("Groups:", paste(groups, collapse = ", "), "\n")
-        cat("Total comparisons:", choose(n_groups, 2), "\n")
+        message("--- Starting MeLSI Pairwise Analysis ---")
+        message("Groups: ", paste(groups, collapse = ", "))
+        message("Total comparisons: ", choose(n_groups, 2))
     }
     
     # Generate all pairwise combinations
@@ -459,13 +459,13 @@ run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, p
     )
     
     # Run pairwise comparisons
-    for (i in 1:n_comparisons) {
+    for (i in seq_len(n_comparisons)) {
         pair <- pairwise_combinations[[i]]
         group1 <- pair[1]
         group2 <- pair[2]
         
         if (show_progress) {
-            cat(sprintf("\nComparison %d/%d: %s vs %s\n", i, n_comparisons, group1, group2))
+            message(sprintf("Comparison %d/%d: %s vs %s", i, n_comparisons, group1, group2))
         }
         
         # Subset data for this pair
@@ -479,7 +479,7 @@ run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, p
                                  show_progress = FALSE, plot_vip = FALSE)
         }, error = function(e) {
             if (show_progress) {
-                cat("Error in", group1, "vs", group2, ":", e$message, "\n")
+                warning("Error in ", group1, " vs ", group2, ": ", e$message)
             }
             return(NULL)
         })
@@ -496,7 +496,7 @@ run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, p
             summary_data$P_value[i] <- pair_result$p_value
             
             if (show_progress) {
-                cat(sprintf("  F-statistic: %.4f, P-value: %.4f\n", 
+                message(sprintf("  F-statistic: %.4f, P-value: %.4f", 
                            pair_result$F_observed, pair_result$p_value))
             }
         }
@@ -510,15 +510,15 @@ run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, p
     significant_pairs <- summary_data[summary_data$Significant, ]
     
     if (show_progress) {
-        cat("\n=== Pairwise Analysis Summary ===\n")
-        cat("Multiple testing correction:", correction_method, "\n")
-        cat("Significant pairs (corrected p < 0.05):", nrow(significant_pairs), "\n")
+        message("\n=== Pairwise Analysis Summary ===")
+        message("Multiple testing correction: ", correction_method)
+        message("Significant pairs (corrected p < 0.05): ", nrow(significant_pairs))
         
         if (nrow(significant_pairs) > 0) {
-            cat("\nSignificant comparisons:\n")
-            for (i in 1:nrow(significant_pairs)) {
+            message("\nSignificant comparisons:")
+            for (i in seq_len(nrow(significant_pairs))) {
                 row <- significant_pairs[i, ]
-                cat(sprintf("  %s vs %s: F=%.3f, p=%.4f (corrected: %.4f)\n",
+                message(sprintf("  %s vs %s: F=%.3f, p=%.4f (corrected: %.4f)",
                            row$Group1, row$Group2, row$F_statistic, 
                            row$P_value, row$P_value_corrected))
             }
@@ -549,7 +549,7 @@ apply_conservative_prefiltering <- function(X, y, filter_frac = 0.7) {
     
     # Calculate feature importance with more conservative approach
     feature_importance <- numeric(ncol(X))
-    for (i in 1:ncol(X)) {
+    for (i in seq_len(ncol(X))) {
         tryCatch({
             # Use variance instead of t-test to be less aggressive
             group1_var <- var(X[class1_indices, i])
@@ -559,7 +559,9 @@ apply_conservative_prefiltering <- function(X, y, filter_frac = 0.7) {
             
             # Combine mean difference and variance for importance
             mean_diff <- abs(group1_mean - group2_mean)
-            var_combined <- sqrt(group1_var + group2_var)
+            # Ensure non-negative before sqrt to avoid NaN warnings
+            var_sum <- pmax(group1_var + group2_var, 0)
+            var_combined <- sqrt(var_sum)
             feature_importance[i] <- mean_diff / (var_combined + 1e-10)
         }, error = function(e) {
             feature_importance[i] <- 0
@@ -587,7 +589,7 @@ apply_conservative_prefiltering_multi <- function(X, y, filter_frac = 0.7) {
     # Calculate feature importance using ANOVA F-statistic for multi-group data
     feature_importance <- numeric(ncol(X))
     
-    for (i in 1:ncol(X)) {
+    for (i in seq_len(ncol(X))) {
         tryCatch({
             # Use ANOVA F-statistic for multi-group comparison
             aov_result <- aov(X[, i] ~ y)
@@ -661,7 +663,7 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
     max_stagnation <- 20
     
     # Simplified but improved gradient descent
-    for (iter in 1:n_iterations) {
+    for (iter in seq_len(n_iterations)) {
         # Sample one pair from each class (simpler but still effective)
         i1 <- sample(class1_indices, 1)
         j1 <- sample(setdiff(class1_indices, i1), 1)
@@ -722,7 +724,7 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
             class1_indices <- which(y == classes[1])
             class2_indices <- which(y == classes[2])
             
-            for (i in 1:n_features) {
+            for (i in seq_len(n_features)) {
                 # Simple t-test for feature importance
                 tryCatch({
                     test_result <- t.test(X[class1_indices, i], X[class2_indices, i])
@@ -747,7 +749,7 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
     valid_count <- 0
     f_stats <- numeric(B)
     
-    for (b in 1:B) {
+    for (b in seq_len(B)) {
         # Bootstrap sampling
         boot_indices <- sample(1:n_samples, n_samples, replace = TRUE)
         if (length(unique(y[boot_indices])) < 2) next
@@ -793,7 +795,7 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
     weights <- weights / sum(weights)  # Normalize weights
     
     M_ensemble <- matrix(0, n_features, n_features)
-    for (i in 1:valid_count) {
+    for (i in seq_len(valid_count)) {
         M_ensemble <- M_ensemble + weights[i] * learned_matrices[[i]]
     }
     
@@ -815,7 +817,7 @@ learn_melsi_metric_omnibus <- function(X, y, B = 30, m_frac = 0.8) {
     valid_count <- 0
     f_stats <- numeric(B)
     
-    for (b in 1:B) {
+    for (b in seq_len(B)) {
         # Bootstrap sampling
         boot_indices <- sample(1:n_samples, n_samples, replace = TRUE)
         if (length(unique(y[boot_indices])) < 2) next
@@ -861,7 +863,7 @@ learn_melsi_metric_omnibus <- function(X, y, B = 30, m_frac = 0.8) {
     weights <- weights / sum(weights)
     
     M_ensemble <- matrix(0, n_features, n_features)
-    for (i in 1:valid_count) {
+    for (i in seq_len(valid_count)) {
         M_ensemble <- M_ensemble + weights[i] * learned_matrices[[i]]
     }
     
@@ -891,7 +893,7 @@ optimize_weak_learner_omnibus <- function(X, y, n_iterations = 50, learning_rate
     prev_f_stat <- -Inf
     stagnation_count <- 0
     
-    for (iter in 1:n_iterations) {
+    for (iter in seq_len(n_iterations)) {
         # Sample from all group pairs (balanced sampling)
         group_pairs <- combn(groups, 2, simplify = FALSE)
         
@@ -1000,13 +1002,15 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
     # Ensure unique feature names (in case truncation created duplicates)
     # Add suffix to duplicates
     if (any(duplicated(feature_names))) {
-        for (i in 1:length(feature_names)) {
+        for (i in seq_along(feature_names)) {
             if (sum(feature_names == feature_names[i]) > 1) {
                 # Find all occurrences of this name
                 dup_indices <- which(feature_names == feature_names[i])
                 # Keep first as-is, add numbers to others
-                for (j in 2:length(dup_indices)) {
-                    feature_names[dup_indices[j]] <- paste0(feature_names[dup_indices[j]], "_", j)
+                if (length(dup_indices) > 1) {
+                    for (j in seq_len(length(dup_indices))[-1]) {
+                        feature_names[dup_indices[j]] <- paste0(feature_names[dup_indices[j]], "_", j)
+                    }
                 }
             }
         }
@@ -1055,10 +1059,10 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
         unique_groups <- unique(directionality_labels)
         # Get the color for the first occurrence of each unique group
         color_map <- stats::setNames(
-            sapply(unique_groups, function(g) {
+            vapply(unique_groups, function(g) {
                 idx <- which(directionality_labels == g)[1]
                 directionality_colors[idx]
-            }),
+            }, character(1)),
             unique_groups
         )
         
