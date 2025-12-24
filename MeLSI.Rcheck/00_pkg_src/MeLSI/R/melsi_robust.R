@@ -25,8 +25,6 @@
 #'
 #' @importFrom stats var aov as.dist dist p.adjust rpois setNames t.test
 #' @importFrom utils combn flush.console
-#' @importFrom vegan adonis2
-#' @import ggplot2
 #'
 #' @examples
 #' # Generate test data

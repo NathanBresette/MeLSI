@@ -1,0 +1,32 @@
+
+R version 4.5.1 (2025-06-13) -- "Great Square Root"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # This file makes testthat available for R CMD check
+> # See: https://testthat.r-lib.org/articles/package.html
+> 
+> library(testthat)
+> library(MeLSI)
+> 
+> test_check("MeLSI")
+[ FAIL 0 | WARN 7 | SKIP 0 | PASS 48 ]
+
+[ FAIL 0 | WARN 7 | SKIP 0 | PASS 48 ]
+> 
+> 
+> proc.time()
+   user  system elapsed 
+ 13.571   0.211  14.116 

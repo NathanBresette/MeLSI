@@ -1,0 +1,42 @@
+citHeader("To cite MeLSI in publications use:")
+
+citEntry(entry = "Manual",
+  title        = "MeLSI: Metric Learning for Statistical Inference in Microbiome Analysis",
+  author       = personList(
+    person("Nathan", "Bresette", role = c("aut", "cre")),
+    person("Aaron C.", "Ericsson", role = "aut"),
+    person("Carter", "Woods", role = "aut"),
+    person("Ai-Ling", "Lin", role = c("aut", "fnd"))
+  ),
+  year         = "2025",
+  note         = "R package version 0.99.0",
+  url          = "https://github.com/NathanBresette/MeLSI",
+  doi          = "10.5281/zenodo.17714848",
+  textVersion  = paste(
+    "Bresette N, Ericsson AC, Woods C, Lin A-L (2025).",
+    "MeLSI: Metric Learning for Statistical Inference in Microbiome Analysis.",
+    "R package version 0.99.0, https://github.com/NathanBresette/MeLSI,",
+    "doi:10.5281/zenodo.17714848."
+  )
+)
+
+citEntry(entry = "Article",
+  title        = "MeLSI: Metric Learning for Statistical Inference in Microbiome Community Composition Analysis",
+  author       = personList(
+    person("Nathan", "Bresette", role = c("aut", "cre")),
+    person("Aaron C.", "Ericsson", role = "aut"),
+    person("Carter", "Woods", role = "aut"),
+    person("Ai-Ling", "Lin", role = c("aut", "fnd"))
+  ),
+  year         = "2025",
+  journal      = "bioRxiv",
+  doi          = "10.64898/2025.12.04.692328",
+  url          = "https://doi.org/10.64898/2025.12.04.692328",
+  note         = "Preprint",
+  textVersion  = paste(
+    "Bresette N, Ericsson AC, Woods C, Lin A-L (2025).",
+    "MeLSI: Metric Learning for Statistical Inference in Microbiome Community Composition Analysis.",
+    "bioRxiv, doi:10.64898/2025.12.04.692328."
+  )
+)
+

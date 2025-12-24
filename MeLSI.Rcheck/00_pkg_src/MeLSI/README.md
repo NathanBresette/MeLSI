@@ -56,7 +56,9 @@ MeLSI depends on the following R packages (automatically installed):
 
 ## Installation
 
-MeLSI can be installed from GitHub using devtools:
+### Install from GitHub
+
+The latest version of MeLSI can be installed from GitHub using devtools:
 
 ```r
 # Install devtools if not already installed
@@ -75,11 +77,8 @@ install.packages(c("vegan", "ggplot2"))
 
 # Install MeLSI from GitHub
 devtools::install_github("NathanBresette/MeLSI")
-```
 
-After installation, load the package:
-
-```r
+# Load the package
 library(MeLSI)
 ```
 

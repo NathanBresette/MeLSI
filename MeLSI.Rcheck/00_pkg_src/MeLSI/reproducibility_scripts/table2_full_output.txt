@@ -1,0 +1,10 @@
+Loading required package: permute
+
+==============================================================================
+REPRODUCING TABLE 2: Power Analysis Across Effect Sizes
+==============================================================================
+
+
+Testing small effect size...
+--- Starting MeLSI Analysis ---
+Learning metric on observed data...

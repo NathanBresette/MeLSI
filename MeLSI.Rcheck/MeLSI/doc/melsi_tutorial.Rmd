@@ -2,10 +2,7 @@
 title: "MeLSI Tutorial: Basic Usage and Examples"
 author: "Nathan Bresette"
 date: "`r Sys.Date()`"
-output: 
-  BiocStyle::html_document:
-    toc: true
-    toc_float: true
+output: html_document
 vignette: >
   %\VignetteIndexEntry{MeLSI Tutorial}
   %\VignetteEngine{knitr::rmarkdown}
@@ -20,23 +17,9 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 This tutorial provides a comprehensive introduction to MeLSI (Metric Learning for Statistical Inference) for microbiome data analysis.
 
-## Abstract
-
-MeLSI is a novel machine learning method that learns optimal distance metrics to improve statistical power in detecting group differences in microbiome data. Unlike traditional distance metrics (Bray-Curtis, Euclidean, Jaccard), MeLSI adapts to the specific characteristics of your dataset. This package provides a statistically rigorous approach to beta diversity analysis that automatically identifies which microbial features drive group differences, making it particularly valuable for biomarker discovery and hypothesis generation in microbiome research.
-
 ## Introduction
 
-MeLSI addresses a fundamental limitation in current microbiome beta diversity analysis: traditional distance metrics treat all microbial taxa equally, missing subtle but biologically important differences. MeLSI learns adaptive distance metrics optimized for your specific dataset while maintaining rigorous statistical validity through permutation testing.
-
-### Comparison with Existing Bioconductor Packages
-
-MeLSI complements existing Bioconductor microbiome analysis packages:
-
-- **phyloseq** and **microbiome**: These packages provide comprehensive data structures and analysis pipelines for microbiome data. MeLSI integrates seamlessly with data from these packages (see "Working with Bioconductor Packages" section below) and adds a novel metric learning approach for beta diversity analysis.
-
-- **vegan**: MeLSI uses `vegan::adonis2()` for PERMANOVA calculations but extends beyond fixed distance metrics by learning optimal metrics from data.
-
-- **Existing distance-based methods**: Unlike packages that use fixed distance metrics (Bray-Curtis, Jaccard, UniFrac), MeLSI learns which features matter most for each specific comparison, providing both improved statistical power and biological interpretability through feature importance weights.
+MeLSI is a novel machine learning method that learns optimal distance metrics to improve statistical power in detecting group differences in microbiome data. Unlike traditional distance metrics (Bray-Curtis, Euclidean, Jaccard), MeLSI adapts to the specific characteristics of your dataset.
 
 ## Installation and Setup
 
@@ -199,33 +182,6 @@ cat(sprintf("Custom MeLSI F-statistic: %.4f (p = %.4f)\n",
 - `n_perms`: Use 200+ for reliable p-values in real analyses
 - `B`: Default 30 is usually sufficient; increase to 50-100 for more stability
 - `m_frac`: Default 0.8 works well; lower values (0.6-0.7) can help with very high-dimensional data
-
-## Working with Bioconductor Packages
-
-### Integration with phyloseq
-
-MeLSI integrates seamlessly with the `phyloseq` package, a core Bioconductor package for microbiome data:
-
-```{r phyloseq_integration, eval=FALSE}
-# Load phyloseq data
-library(phyloseq)
-data(GlobalPatterns)  # Example phyloseq object
-
-# Extract OTU table and sample data
-X <- as(otu_table(GlobalPatterns), "matrix")
-y <- sample_data(GlobalPatterns)$SampleType
-
-# CLR transformation
-X_clr <- clr_transform(X)
-
-# Run MeLSI analysis
-results <- melsi(X_clr, y, n_perms = 200, B = 30, show_progress = FALSE)
-
-# Results can be used with other phyloseq functions
-# For example, you can add the learned distance matrix to a phyloseq object
-```
-
-This interoperability ensures MeLSI works within the existing Bioconductor ecosystem and can be integrated into comprehensive microbiome analysis workflows.
 
 ## Summary
 
