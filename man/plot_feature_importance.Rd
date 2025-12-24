@@ -20,6 +20,21 @@ plot_feature_importance(
 
 \item{directionality}{Optional named vector indicating which group has higher abundance for each feature}
 }
+\value{
+A ggplot2 object (invisibly)
+}
 \description{
 Creates a barplot showing the top features ranked by their learned weights
+}
+\examples{
+# Generate test data and run MeLSI
+test_data <- generate_test_data(n_samples = 30, n_taxa = 20, n_signal_taxa = 5)
+X <- test_data$counts
+y <- test_data$metadata$Group
+X_clr <- clr_transform(X)
+results <- melsi(X_clr, y, n_perms = 19, B = 10, show_progress = FALSE)
+
+# Plot feature importance
+plot_feature_importance(results$feature_weights, top_n = 10)
+
 }

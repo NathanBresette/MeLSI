@@ -25,6 +25,24 @@
 #'
 #' @importFrom stats var aov as.dist dist p.adjust rpois setNames t.test
 #' @importFrom utils combn flush.console
+#'
+#' @examples
+#' # Generate test data
+#' test_data <- generate_test_data(n_samples = 40, n_taxa = 50, n_signal_taxa = 5)
+#' X <- test_data$counts
+#' y <- test_data$metadata$Group
+#' 
+#' # CLR transformation
+#' X_clr <- clr_transform(X)
+#' 
+#' # Run MeLSI analysis
+#' results <- melsi(X_clr, y, n_perms = 19, B = 10, show_progress = FALSE)
+#' 
+#' # Check results
+#' stopifnot(is.list(results))
+#' stopifnot("F_observed" %in% names(results))
+#' stopifnot("p_value" %in% names(results))
+#'
 #' @export
 melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0.8, 
                  show_progress = TRUE, plot_vip = TRUE, correction_method = "BH") {
@@ -934,6 +952,19 @@ optimize_weak_learner_omnibus <- function(X, y, n_iterations = 50, learning_rate
 #' @param main_title Optional title for the plot
 #' @param directionality Optional named vector indicating which group has higher abundance for each feature
 #'
+#' @return A ggplot2 object (invisibly)
+#'
+#' @examples
+#' # Generate test data and run MeLSI
+#' test_data <- generate_test_data(n_samples = 30, n_taxa = 20, n_signal_taxa = 5)
+#' X <- test_data$counts
+#' y <- test_data$metadata$Group
+#' X_clr <- clr_transform(X)
+#' results <- melsi(X_clr, y, n_perms = 19, B = 10, show_progress = FALSE)
+#' 
+#' # Plot feature importance
+#' plot_feature_importance(results$feature_weights, top_n = 10)
+#'
 #' @export
 plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NULL, directionality = NULL) {
     # Validate input
@@ -1095,22 +1126,15 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
 #' @return A ggplot2 object (invisibly)
 #'
 #' @examples
-#' \dontrun{
-#'   # Run MeLSI analysis
-#'   results <- melsi(X, y)
-#'   
-#'   # Plot VIP with directionality (default)
-#'   plot_vip(results)
-#'   
-#'   # Plot VIP without directionality
-#'   plot_vip(results, directionality = FALSE)
-#'   
-#'   # Show top 20 features with directionality
-#'   plot_vip(results, top_n = 20, directionality = TRUE)
-#'   
-#'   # Custom title
-#'   plot_vip(results, title = "My Custom VIP Plot")
-#' }
+#' # Generate test data and run MeLSI
+#' test_data <- generate_test_data(n_samples = 30, n_taxa = 20, n_signal_taxa = 5)
+#' X <- test_data$counts
+#' y <- test_data$metadata$Group
+#' X_clr <- clr_transform(X)
+#' results <- melsi(X_clr, y, n_perms = 19, B = 10, show_progress = FALSE)
+#' 
+#' # Plot VIP with directionality (default)
+#' plot_vip(results, top_n = 10)
 #'
 #' @export
 plot_vip <- function(melsi_results, top_n = 15, title = NULL, directionality = TRUE) {
@@ -1153,17 +1177,18 @@ plot_vip <- function(melsi_results, top_n = 15, title = NULL, directionality = T
 #'
 #' @return A ggplot2 object (invisibly)
 #'
+#' @importFrom stats cmdscale
+#'
 #' @examples
-#' \dontrun{
-#'   # Run MeLSI analysis
-#'   results <- melsi(X_clr, y)
-#'   
-#'   # Plot PCoA (automatic!)
-#'   plot_pcoa(results, X_clr, y)
-#'   
-#'   # Custom title
-#'   plot_pcoa(results, X_clr, y, title = "My PCoA Plot")
-#' }
+#' # Generate test data and run MeLSI
+#' test_data <- generate_test_data(n_samples = 30, n_taxa = 20, n_signal_taxa = 5)
+#' X <- test_data$counts
+#' y <- test_data$metadata$Group
+#' X_clr <- clr_transform(X)
+#' results <- melsi(X_clr, y, n_perms = 19, B = 10, show_progress = FALSE)
+#' 
+#' # Plot PCoA
+#' plot_pcoa(results, X_clr, y)
 #'
 #' @export
 plot_pcoa <- function(melsi_results, X, y, title = "PCoA using MeLSI Distance") {
@@ -1223,13 +1248,16 @@ plot_pcoa <- function(melsi_results, X, y, title = "PCoA using MeLSI Distance") 
 #' @return CLR-transformed matrix with preserved column names
 #'
 #' @examples
-#' \dontrun{
-#'   # Transform your microbiome data
-#'   X_clr <- clr_transform(X)
-#'   
-#'   # Then run MeLSI
-#'   results <- melsi(X_clr, y)
-#' }
+#' # Generate synthetic data
+#' test_data <- generate_test_data(n_samples = 20, n_taxa = 30, n_signal_taxa = 5)
+#' X <- test_data$counts
+#' 
+#' # Transform microbiome data
+#' X_clr <- clr_transform(X)
+#' 
+#' # Verify transformation
+#' stopifnot(is.matrix(X_clr))
+#' stopifnot(nrow(X_clr) == nrow(X))
 #'
 #' @export
 clr_transform <- function(X, pseudocount = 1) {

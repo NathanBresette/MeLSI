@@ -19,12 +19,15 @@ Applies centered log-ratio (CLR) transformation to microbiome count data.
 This transformation is recommended for microbiome data before running MeLSI.
 }
 \examples{
-\dontrun{
-  # Transform your microbiome data
-  X_clr <- clr_transform(X)
-  
-  # Then run MeLSI
-  results <- melsi(X_clr, y)
-}
+# Generate synthetic data
+test_data <- generate_test_data(n_samples = 20, n_taxa = 30, n_signal_taxa = 5)
+X <- test_data$counts
+
+# Transform microbiome data
+X_clr <- clr_transform(X)
+
+# Verify transformation
+stopifnot(is.matrix(X_clr))
+stopifnot(nrow(X_clr) == nrow(X))
 
 }

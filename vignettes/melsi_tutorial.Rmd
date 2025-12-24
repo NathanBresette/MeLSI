@@ -24,15 +24,19 @@ MeLSI is a novel machine learning method that learns optimal distance metrics to
 ## Installation and Setup
 
 ```{r install, eval=FALSE}
+# Install devtools if not already installed
+if (!require("devtools", quietly = TRUE))
+    install.packages("devtools")
+
 # Install required packages
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
 BiocManager::install(c("phyloseq", "microbiome"))
-install.packages(c("vegan", "ggplot2", "dplyr", "GUniFrac"))
+install.packages(c("vegan", "ggplot2"))
 
-# Source MeLSI functions
-source("R/melsi_robust.R")
+# Install MeLSI from GitHub
+devtools::install_github("NathanBresette/MeLSI")
 ```
 
 ## Basic Usage
@@ -60,10 +64,8 @@ cat("Groups:", paste(unique(y), collapse = ", "), "\n")
 
 ```{r preprocessing}
 # CLR transformation (recommended for microbiome data)
-X_clr <- X
-X_clr[X_clr == 0] <- 1e-10  # Handle zeros
-X_clr <- log(X_clr)         # Log transform
-X_clr <- X_clr - rowMeans(X_clr)  # Center by row means
+# Use the built-in helper function for easy CLR transformation
+X_clr <- clr_transform(X)
 
 # Display preprocessing results
 cat("CLR transformation completed\n")
@@ -74,10 +76,12 @@ cat("Data range:", round(range(X_clr), 3), "\n")
 
 ```{r run_melsi}
 # Run MeLSI with default parameters
+# Note: For real analyses, use n_perms = 200+ for reliable p-values
+# Using 99 here for faster vignette execution
 cat("Running MeLSI analysis...\n")
 melsi_results <- melsi(
     X_clr, y, 
-    n_perms = 99,    # Number of permutations
+    n_perms = 99,    # Number of permutations (use 200+ for real analysis)
     B = 30,          # Number of weak learners
     m_frac = 0.8,    # Fraction of features per learner
     show_progress = TRUE
@@ -88,6 +92,12 @@ cat("\nMeLSI Results:\n")
 cat(sprintf("F-statistic: %.4f\n", melsi_results$F_observed))
 cat(sprintf("P-value: %.4f\n", melsi_results$p_value))
 cat(sprintf("Significant: %s\n", ifelse(melsi_results$p_value < 0.05, "Yes", "No")))
+
+# VIP plot is automatically generated, but you can also create it manually:
+plot_vip(melsi_results, top_n = 15)
+
+# PCoA plot using the learned MeLSI distance
+plot_pcoa(melsi_results, X_clr, y)
 ```
 
 ## Comparison with Standard Methods
@@ -115,91 +125,52 @@ improvement <- (melsi_results$F_observed - adonis_euclidean$F[1]) / adonis_eucli
 cat(sprintf("\nMeLSI improvement over Euclidean: %.1f%%\n", improvement))
 ```
 
-## Analyzing Learned Metric Weights
+## Visualizing Results
 
-```{r metric_weights}
-# Extract learned feature weights
+### Variable Importance Plot (VIP)
+
+MeLSI automatically generates a VIP plot showing which features drive group differences.
+You can customize it using the `plot_vip()` function:
+
+```{r vip_plot}
+# Plot VIP with directionality (default)
+plot_vip(melsi_results, top_n = 15, title = "Top 15 Features by Importance")
+
+# Plot VIP without directionality coloring
+plot_vip(melsi_results, top_n = 15, directionality = FALSE)
+
+# Extract and examine feature weights programmatically
 feature_weights <- melsi_results$feature_weights
-taxon_names <- names(feature_weights)
+top_features <- head(sort(feature_weights, decreasing = TRUE), 10)
 
-# Create weight analysis
-weight_analysis <- data.frame(
-    taxon = taxon_names,
-    learned_weight = feature_weights,
-    rank = rank(-feature_weights)
-)
-
-# Sort by learned weight
-weight_analysis <- weight_analysis[order(-weight_analysis$learned_weight), ]
-
-# Display top weighted taxa
-cat("\nTop 10 Most Weighted Taxa:\n")
-top_taxa <- head(weight_analysis, 10)
-for (i in 1:nrow(top_taxa)) {
+cat("\nTop 10 Most Weighted Features:\n")
+for (i in 1:length(top_features)) {
     cat(sprintf("%2d. %s (weight: %.4f)\n", 
-               i, top_taxa$taxon[i], top_taxa$learned_weight[i]))
+               i, names(top_features)[i], top_features[i]))
 }
-
-# Visualize weight distribution
-library(ggplot2)
-ggplot(weight_analysis, aes(x = learned_weight)) +
-    geom_histogram(bins = 20, fill = "steelblue", alpha = 0.7) +
-    labs(title = "Distribution of Learned Metric Weights",
-         x = "Learned Weight", y = "Count") +
-    theme_minimal()
 ```
 
-## Parameter Sensitivity Analysis
+### Principal Coordinates Analysis (PCoA)
 
-```{r parameter_sensitivity}
-# Test different ensemble sizes
-B_values <- c(20, 50, 100)
-results_sensitivity <- data.frame()
+Visualize the learned MeLSI distance using PCoA:
 
-for (B in B_values) {
-    cat(sprintf("Testing B = %d...\n", B))
-    
-    start_time <- Sys.time()
-    result <- melsi(
-        X_clr, y, 
-        n_perms = 19,  # Reduced for speed
-        B = B, 
-        show_progress = FALSE
-    )
-    runtime <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-    
-    results_sensitivity <- rbind(results_sensitivity, data.frame(
-        B = B,
-        F_statistic = result$F_observed,
-        runtime = runtime
-    ))
-}
-
-# Display parameter sensitivity results
-cat("\nParameter Sensitivity Results:\n")
-print(results_sensitivity)
-
-# Visualize parameter sensitivity
-ggplot(results_sensitivity, aes(x = B, y = F_statistic)) +
-    geom_line(color = "steelblue", size = 1) +
-    geom_point(color = "red", size = 3) +
-    labs(title = "Effect of Ensemble Size (B) on F-statistic",
-         x = "Ensemble Size (B)", y = "F-statistic") +
-    theme_minimal()
+```{r pcoa_plot}
+# Create PCoA plot using the learned MeLSI distance matrix
+plot_pcoa(melsi_results, X_clr, y, title = "PCoA: MeLSI Distance")
 ```
 
-## Advanced Usage
+## Advanced Usage: Custom Parameters
 
-### Custom Parameters
+You can customize MeLSI parameters for your specific needs:
 
 ```{r advanced_usage}
 # Run MeLSI with custom parameters
 cat("Running MeLSI with custom parameters...\n")
 custom_results <- melsi(
     X_clr, y, 
-    n_perms = 199,   # More permutations for higher precision
-    B = 100,         # Larger ensemble
-    m_frac = 0.8,    # More features per learner
+    n_perms = 199,   # More permutations for higher precision (recommended: 200+)
+    B = 100,         # Larger ensemble for more stable results
+    m_frac = 0.8,    # Fraction of features per learner
     show_progress = TRUE
 )
 
@@ -207,46 +178,40 @@ cat(sprintf("Custom MeLSI F-statistic: %.4f (p = %.4f)\n",
            custom_results$F_observed, custom_results$p_value))
 ```
 
-### Pre-filtering
-
-MeLSI automatically applies conservative pre-filtering to focus on high-variance features
-while maintaining statistical validity. This is always enabled and helps improve computational
-efficiency and reduce noise from uninformative features.
-
-```{r prefiltering, eval=FALSE}
-# Note: Pre-filtering is automatically applied in MeLSI
-# No additional configuration needed
-
-improvement <- (results_with_prefilter$F_observed - results_without_prefilter$F_observed) / 
-               results_without_prefilter$F_observed * 100
-speedup <- (time_without_prefilter - time_with_prefilter) / time_without_prefilter * 100
-
-cat(sprintf("F-statistic improvement: %.1f%%\n", improvement))
-cat(sprintf("Time reduction: %.1f%%\n", speedup))
-```
+**Parameter Guidelines:**
+- `n_perms`: Use 200+ for reliable p-values in real analyses
+- `B`: Default 30 is usually sufficient; increase to 50-100 for more stability
+- `m_frac`: Default 0.8 works well; lower values (0.6-0.7) can help with very high-dimensional data
 
 ## Summary
 
 This tutorial demonstrated:
 
 1. **Basic MeLSI usage** with synthetic microbiome data
-2. **Comparison with standard methods** (Euclidean, Bray-Curtis)
-3. **Analysis of learned metric weights** for biological interpretation
-4. **Parameter sensitivity analysis** to optimize performance
-5. **Advanced usage** with custom parameters and pre-filtering
+2. **Easy data preprocessing** using `clr_transform()`
+3. **Automatic visualization** with `plot_vip()` and `plot_pcoa()`
+4. **Comparison with standard methods** (Euclidean, Bray-Curtis)
+5. **Custom parameters** for advanced usage
 
 ### Key Takeaways
 
 - MeLSI consistently outperforms standard distance metrics
+- Helper functions (`clr_transform`, `plot_vip`, `plot_pcoa`) simplify the workflow
 - Learned metric weights provide interpretable feature importance
-- Pre-filtering improves both performance and efficiency
-- Parameter selection affects performance vs. computation time trade-offs
+- Default parameters work well for most analyses
+- Use `n_perms = 200+` for reliable p-values in real analyses
 
 ### Next Steps
 
 - Try MeLSI on your own microbiome datasets
-- Explore the comprehensive testing suite in `R/test_comparison.R`
-- Run biological validation analyses in `R/biological_validation.R`
-- Check the validation results in the `inst/` folder
+- Use `clr_transform()` for easy CLR preprocessing
+- Visualize results with `plot_vip()` and `plot_pcoa()`
+- Adjust parameters (`B`, `m_frac`) if needed for your specific data
 
 For more information, see the main README.md file and the comprehensive documentation.
+
+## Session Info
+
+```{r session_info}
+sessionInfo()
+```

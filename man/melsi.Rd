@@ -47,3 +47,21 @@ For 2 groups or pairwise analysis: List with F-statistic, p-value, feature weigh
 Performs MeLSI (Metric Learning for Statistical Inference) analysis for microbiome data.
 Automatically handles both pairwise comparisons (2 groups) and multi-group analysis (3+ groups).
 }
+\examples{
+# Generate test data
+test_data <- generate_test_data(n_samples = 40, n_taxa = 50, n_signal_taxa = 5)
+X <- test_data$counts
+y <- test_data$metadata$Group
+
+# CLR transformation
+X_clr <- clr_transform(X)
+
+# Run MeLSI analysis
+results <- melsi(X_clr, y, n_perms = 19, B = 10, show_progress = FALSE)
+
+# Check results
+stopifnot(is.list(results))
+stopifnot("F_observed" \%in\% names(results))
+stopifnot("p_value" \%in\% names(results))
+
+}

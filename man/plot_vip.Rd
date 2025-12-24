@@ -23,21 +23,14 @@ Simplified function to plot Variable Importance (VIP) directly from MeLSI result
 Automatically extracts feature weights and optionally includes directionality information.
 }
 \examples{
-\dontrun{
-  # Run MeLSI analysis
-  results <- melsi(X, y)
-  
-  # Plot VIP with directionality (default)
-  plot_vip(results)
-  
-  # Plot VIP without directionality
-  plot_vip(results, directionality = FALSE)
-  
-  # Show top 20 features with directionality
-  plot_vip(results, top_n = 20, directionality = TRUE)
-  
-  # Custom title
-  plot_vip(results, title = "My Custom VIP Plot")
-}
+# Generate test data and run MeLSI
+test_data <- generate_test_data(n_samples = 30, n_taxa = 20, n_signal_taxa = 5)
+X <- test_data$counts
+y <- test_data$metadata$Group
+X_clr <- clr_transform(X)
+results <- melsi(X_clr, y, n_perms = 19, B = 10, show_progress = FALSE)
+
+# Plot VIP with directionality (default)
+plot_vip(results, top_n = 10)
 
 }

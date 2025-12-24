@@ -52,3 +52,5 @@ coverage/
 # Profiling
 *.prof
 *.Rprof
+/doc/
+/Meta/

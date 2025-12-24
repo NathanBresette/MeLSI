@@ -1,15 +1,17 @@
 Package: MeLSI
 Type: Package
 Title: Metric Learning for Statistical Inference in Microbiome Analysis
-Version: 1.0.0
-Author: Nathan Bresette
-Maintainer: Nathan Bresette <nathan.bresette@example.com>
+Version: 0.99.0
+Authors@R: c(person("Nathan", "Bresette", email = "nathanbresette04@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0009-0003-1554-6006")), person("Aaron C.", "Ericsson", role = "aut", comment = c(ORCID = "0000-0002-3053-7269")), person("Carter", "Woods", role = "aut", comment = c(ORCID = "0009-0007-5345-2712")), person("Ai-Ling", "Lin", role = c("aut", "fnd"), comment = c(ORCID = "0000-0002-5197-2219")))
+Funding: NIH/NIA R56AG079586
 Description: MeLSI (Metric Learning for Statistical Inference) is a novel machine learning method for microbiome data analysis that learns optimal distance metrics to improve statistical power in detecting group differences. Unlike traditional distance metrics (Bray-Curtis, Euclidean, Jaccard), MeLSI adapts to the specific characteristics of your dataset to maximize separation between groups.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
-Depends: R (>= 4.0.0)
+Depends: R (>= 4.5.0)
+URL: https://github.com/NathanBresette/MeLSI
+BugReports: https://github.com/NathanBresette/MeLSI/issues
 Imports: 
     vegan,
     ggplot2,
@@ -24,3 +26,4 @@ Suggests:
     phyloseq,
     microbiome
 VignetteBuilder: knitr
+biocViews: Software, StatisticalMethod, Microbiome
