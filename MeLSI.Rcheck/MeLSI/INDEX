@@ -1,8 +1,0 @@
-clr_transform           CLR Transformation for Microbiome Data
-generate_test_data      Generate Synthetic Microbiome Data for Testing
-melsi                   Run MeLSI Analysis
-plot_feature_importance
-                        Plot Feature Importance from MeLSI Analysis
-plot_pcoa               Plot PCoA from MeLSI Results
-plot_vip                Plot VIP from MeLSI Results (User-Friendly
-                        Wrapper)

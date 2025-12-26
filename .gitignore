@@ -96,3 +96,4 @@ BiocCheck*/
 Rcheck*/
 Rplots.pdf
 *.Rcheck
+tests/testthat/Rplots.pdf
