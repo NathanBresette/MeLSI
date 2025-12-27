@@ -256,7 +256,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
             plot_feature_importance(feature_weights, directionality = directionality_info)
         }, error = function(e) {
             if (show_progress) {
-                warning("Could not generate VIP plot. Error: ", e$message)
+                warning("Could not generate VIP plot: ", e$message)
             }
         })
     }
@@ -402,7 +402,7 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
                                   directionality = directionality_info)
         }, error = function(e) {
             if (show_progress) {
-                warning("Could not generate VIP plot. Error: ", e$message)
+                warning("Could not generate VIP plot: ", e$message)
             }
         })
     }
@@ -479,7 +479,7 @@ run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, p
                                  show_progress = FALSE, plot_vip = FALSE)
         }, error = function(e) {
             if (show_progress) {
-                warning("Error in ", group1, " vs ", group2, ": ", e$message)
+                warning("Analysis failed for ", group1, " vs ", group2, ": ", e$message)
             }
             return(NULL)
         })
@@ -570,7 +570,7 @@ apply_conservative_prefiltering <- function(X, y, filter_frac = 0.7) {
     
     # Keep more features (70% instead of 50%)
     n_keep <- max(10, floor(ncol(X) * filter_frac))
-    top_features <- order(feature_importance, decreasing = TRUE)[1:n_keep]
+    top_features <- order(feature_importance, decreasing = TRUE)[seq_len(n_keep)]
     
     # Ensure column names are preserved
     filtered_X <- X[, top_features, drop = FALSE]
@@ -602,7 +602,7 @@ apply_conservative_prefiltering_multi <- function(X, y, filter_frac = 0.7) {
     
     # Keep top features
     n_keep <- max(10, floor(ncol(X) * filter_frac))
-    top_features <- order(feature_importance, decreasing = TRUE)[1:n_keep]
+    top_features <- order(feature_importance, decreasing = TRUE)[seq_len(n_keep)]
     
     # Ensure column names are preserved
     filtered_X <- X[, top_features, drop = FALSE]
@@ -737,7 +737,7 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
             # Keep top features
             top_features <- order(feature_importance, decreasing = TRUE)
             n_keep <- max(10, min(n_features, floor(n_features * 0.5)))
-            keep_features <- top_features[1:n_keep]
+            keep_features <- top_features[seq_len(n_keep)]
             
             X <- X[, keep_features, drop = FALSE]
             n_features <- ncol(X)
@@ -751,14 +751,14 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
     
     for (b in seq_len(B)) {
         # Bootstrap sampling
-        boot_indices <- sample(1:n_samples, n_samples, replace = TRUE)
+        boot_indices <- sample(seq_len(n_samples), n_samples, replace = TRUE)
         if (length(unique(y[boot_indices])) < 2) next
         
         X_boot <- X[boot_indices, , drop = FALSE]
         y_boot <- y[boot_indices]
         
         # Feature subsampling
-        feature_indices <- sample(1:n_features, m, replace = FALSE)
+        feature_indices <- sample(seq_len(n_features), m, replace = FALSE)
         X_subset <- X_boot[, feature_indices, drop = FALSE]
         
         # Learn weak learner
@@ -791,7 +791,7 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
     }
     
     # Ensemble averaging with performance weighting
-    weights <- f_stats[1:valid_count]
+    weights <- f_stats[seq_len(valid_count)]
     weights <- weights / sum(weights)  # Normalize weights
     
     M_ensemble <- matrix(0, n_features, n_features)
@@ -819,14 +819,14 @@ learn_melsi_metric_omnibus <- function(X, y, B = 30, m_frac = 0.8) {
     
     for (b in seq_len(B)) {
         # Bootstrap sampling
-        boot_indices <- sample(1:n_samples, n_samples, replace = TRUE)
+        boot_indices <- sample(seq_len(n_samples), n_samples, replace = TRUE)
         if (length(unique(y[boot_indices])) < 2) next
         
         X_boot <- X[boot_indices, , drop = FALSE]
         y_boot <- y[boot_indices]
         
         # Feature subsampling
-        feature_indices <- sample(1:n_features, m, replace = FALSE)
+        feature_indices <- sample(seq_len(n_features), m, replace = FALSE)
         X_subset <- X_boot[, feature_indices, drop = FALSE]
         
         # Learn weak learner optimized for all group pairs
@@ -859,7 +859,7 @@ learn_melsi_metric_omnibus <- function(X, y, B = 30, m_frac = 0.8) {
     }
     
     # Ensemble averaging with performance weighting
-    weights <- f_stats[1:valid_count]
+    weights <- f_stats[seq_len(valid_count)]
     weights <- weights / sum(weights)
     
     M_ensemble <- matrix(0, n_features, n_features)
@@ -986,12 +986,12 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
     
     # Take top N features
     n_display <- min(top_n, length(sorted_weights))
-    top_weights <- sorted_weights[1:n_display]
+    top_weights <- sorted_weights[seq_len(n_display)]
     
     # Get feature names
     feature_names <- names(top_weights)
     if (is.null(feature_names)) {
-        feature_names <- paste0("Feature_", 1:n_display)
+        feature_names <- paste0("Feature_", seq_len(n_display))
     }
     
     # Truncate long names for better display (more aggressive truncation)
@@ -1111,9 +1111,6 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
             ) +
             ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0, 0.1)))
     }
-    
-    # Print the plot
-    print(p)
     
     # Return the plot object for further customization if needed    
     return(invisible(p))
@@ -1239,7 +1236,6 @@ plot_pcoa <- function(melsi_results, X, y, title = "PCoA using MeLSI Distance") 
             legend.position = "right"
         )
     
-    print(p)
     return(invisible(p))
 }
 

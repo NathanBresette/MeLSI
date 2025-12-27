@@ -106,7 +106,7 @@ melsi_results <- melsi(
 
 # Display results
 cat("\nMeLSI Results:\n")
-cat(sprintf("F-statistic: %.4f\n", melsi_results$F_observed))
+cat(sprintf("F-statistic value: %.4f\n", melsi_results$F_observed))
 cat(sprintf("P-value: %.4f\n", melsi_results$p_value))
 cat(sprintf("Significant: %s\n", ifelse(melsi_results$p_value < 0.05, "Yes", "No")))
 
@@ -130,15 +130,15 @@ adonis_bray <- adonis2(dist_bray ~ y, permutations = 99)
 
 # Display comparison results
 cat("\nMethod Comparison:\n")
-cat(sprintf("MeLSI:        F = %.4f, p = %.4f\n", 
+cat(sprintf("MeLSI:        F-statistic = %.4f, p = %.4f\n", 
            melsi_results$F_observed, melsi_results$p_value))
-cat(sprintf("Euclidean:    F = %.4f, p = %.4f\n", 
-           adonis_euclidean$F[1], adonis_euclidean$`Pr(>F)`[1]))
-cat(sprintf("Bray-Curtis: F = %.4f, p = %.4f\n", 
-           adonis_bray$F[1], adonis_bray$`Pr(>F)`[1]))
+cat(sprintf("Euclidean:    F-statistic = %.4f, p = %.4f\n", 
+           adonis_euclidean[["F"]][1], adonis_euclidean[["Pr(>F)"]][1]))
+cat(sprintf("Bray-Curtis: F-statistic = %.4f, p = %.4f\n", 
+           adonis_bray[["F"]][1], adonis_bray[["Pr(>F)"]][1]))
 
 # Calculate improvement
-improvement <- (melsi_results$F_observed - adonis_euclidean$F[1]) / adonis_euclidean$F[1] * 100
+improvement <- (melsi_results$F_observed - adonis_euclidean[["F"]][1]) / adonis_euclidean[["F"]][1] * 100
 cat(sprintf("\nMeLSI improvement over Euclidean: %.1f%%\n", improvement))
 ```
 
@@ -191,7 +191,7 @@ custom_results <- melsi(
     show_progress = TRUE
 )
 
-cat(sprintf("Custom MeLSI F-statistic: %.4f (p = %.4f)\n", 
+cat(sprintf("Custom MeLSI F-statistic value: %.4f (p = %.4f)\n", 
            custom_results$F_observed, custom_results$p_value))
 ```
 

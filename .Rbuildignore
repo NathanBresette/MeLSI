@@ -16,5 +16,7 @@
 ^validation_scripts$
 ^\.Rcheck$
 ^BiocCheck
+^MeLSI\.BiocCheck$
 ^Rcheck
 ^Rplots\.pdf$
+^LICENSE\.md$
