@@ -41,7 +41,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          install.packages(c("remotes", "rcmdcheck"))
+          install.packages(c("remotes", "rcmdcheck", "BiocManager"))
+          BiocManager::install(version = "devel", ask = FALSE)
+          # Install Bioconductor packages explicitly (phyloseq is in Imports)
+          BiocManager::install("phyloseq", ask = FALSE)
+          # Install remaining dependencies (remotes will skip already-installed packages)
           remotes::install_deps(dependencies = TRUE)
         shell: Rscript {0}
 
