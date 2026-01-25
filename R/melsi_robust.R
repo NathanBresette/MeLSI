@@ -1224,7 +1224,7 @@ plot_pcoa <- function(melsi_results, X, y, title = "PCoA using MeLSI Distance") 
     # Create ggplot
     p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = PC1, y = PC2, color = Group)) +
         ggplot2::geom_point(size = 3, alpha = 0.7) +
-        ggplot2::stat_ellipse(level = 0.68, linetype = 2) +
+        ggplot2::stat_ellipse(level = 0.95, linetype = 2) +
         ggplot2::labs(
             title = title,
             x = sprintf("PCoA1 (%.1f%%)", var_explained[1]),
