@@ -476,7 +476,7 @@ run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, p
         # Run MeLSI for this pair
         pair_result <- tryCatch({
             run_pairwise_analysis(X_pair, y_pair, n_perms = n_perms, B = B, m_frac = m_frac,
-                                 show_progress = FALSE, plot_vip = FALSE)
+                                 show_progress = show_progress, plot_vip = FALSE)
         }, error = function(e) {
             if (show_progress) {
                 warning("Analysis failed for ", group1, " vs ", group2, ": ", e$message)
