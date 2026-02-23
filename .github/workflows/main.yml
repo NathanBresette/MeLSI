@@ -16,9 +16,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest, r: 'release'}
-          - {os: macOS-latest, r: 'release'}
-          - {os: ubuntu-latest, r: 'release'}
+          - {os: windows-latest, r: 'devel'}
+          - {os: macOS-latest, r: 'devel'}
+          - {os: ubuntu-latest, r: 'devel'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -43,7 +43,7 @@ jobs:
       - name: Install BiocManager and Bioconductor dependencies
         run: |
           install.packages("BiocManager")
-          BiocManager::install(version = "3.22", ask = FALSE, update = FALSE)
+          BiocManager::install(version = "3.23", ask = FALSE, update = FALSE)
           BiocManager::install("phyloseq", ask = FALSE, update = FALSE, force = TRUE)
         shell: Rscript {0}
 
