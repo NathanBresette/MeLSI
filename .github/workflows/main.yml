@@ -6,51 +6,48 @@ on:
   pull_request:
     branches: [ main, master ]
 
+env:
+  GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   R-CMD-check:
-    runs-on: ${{ matrix.config.os }}
-
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
-
+    name: Bioc devel (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - {os: ubuntu-latest, r: 'devel'}
+        os: [ubuntu-latest]
 
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: r-lib/actions/setup-r@v2
+      - name: Setup R and Bioconductor
+        uses: grimbough/bioc-actions/setup-bioc@v1
         with:
-          r-version: ${{ matrix.config.r }}
-          use-public-rspm: true
+          bioc-version: devel
 
-      - uses: r-lib/actions/setup-pandoc@v2
+      - name: Install pandoc
+        uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Install system dependencies (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libgsl-dev
-
-      - name: Install BiocManager and Bioconductor dependencies
-        run: |
-          install.packages("BiocManager")
-          BiocManager::install(version = "3.23", ask = FALSE, update = FALSE)
-          BiocManager::install("phyloseq", ask = FALSE, update = FALSE, force = TRUE)
-        shell: Rscript {0}
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      - name: Install dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
-          needs: check
+          cache-version: 1
 
-      - uses: r-lib/actions/check-r-package@v2
+      - name: Build, Install, Check
+        id: build-install-check
+        uses: grimbough/bioc-actions/build-install-check@v1
+
+      - name: Run BiocCheck
+        uses: grimbough/bioc-actions/run-BiocCheck@v1
         with:
-          args: 'c("--no-manual", "--as-cran")'
-          error-on: '"warning"'
+          error-on: 'error'
+
+      - name: Upload check output
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.os }}-Rcheck
+          path: |
+            ${{ steps.build-install-check.outputs.check-dir }}
