@@ -41,19 +41,10 @@ MeLSI complements existing Bioconductor microbiome analysis packages:
 ## Installation and Setup
 
 ```{r install, eval=FALSE}
-# Install devtools if not already installed
-if (!require("devtools", quietly = TRUE))
-    install.packages("devtools")
-
-# Install required packages
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-BiocManager::install(c("phyloseq", "microbiome"))
-install.packages(c("vegan", "ggplot2"))
-
-# Install MeLSI from GitHub
-devtools::install_github("NathanBresette/MeLSI")
+BiocManager::install("MeLSI")
 ```
 
 ## Basic Usage

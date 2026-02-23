@@ -13,12 +13,15 @@
 #'   - "pairwise": For 2 groups or all pairwise comparisons for 3+ groups
 #'   - "omnibus": Global analysis for 3+ groups (requires at least 3 groups)
 #'   - "both": Both omnibus and pairwise for 3+ groups
-#' @param n_perms Number of permutations for p-value calculation (default: 75)
+#' @param n_perms Number of permutations for p-value calculation (default: 200)
 #' @param B Number of weak learners in the ensemble (default: 30)
 #' @param m_frac Fraction of features to use in each weak learner (default: 0.8)
 #' @param show_progress Whether to display progress information (default: TRUE)
 #' @param plot_vip Whether to display Variable Importance Plot (default: TRUE)
 #' @param correction_method Multiple testing correction method for pairwise comparisons (default: "BH")
+#' @param BPPARAM A \code{\link[BiocParallel]{BiocParallelParam}} object specifying the
+#'   parallel backend to use for permutation testing. If \code{NULL} (default),
+#'   permutations run sequentially. Requires the \pkg{BiocParallel} package.
 #'
 #' @return For 2 groups or pairwise analysis: List with F-statistic, p-value, feature weights, etc.
 #'         For 3+ groups: List containing omnibus results, pairwise results, or both.
@@ -33,21 +36,22 @@
 #' test_data <- generate_test_data(n_samples = 40, n_taxa = 50, n_signal_taxa = 5)
 #' X <- test_data$counts
 #' y <- test_data$metadata$Group
-#' 
+#'
 #' # CLR transformation
 #' X_clr <- clr_transform(X)
-#' 
+#'
 #' # Run MeLSI analysis
 #' results <- melsi(X_clr, y, n_perms = 19, B = 10, show_progress = FALSE)
-#' 
+#'
 #' # Check results
 #' stopifnot(is.list(results))
 #' stopifnot("F_observed" %in% names(results))
 #' stopifnot("p_value" %in% names(results))
 #'
 #' @export
-melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0.8, 
-                 show_progress = TRUE, plot_vip = TRUE, correction_method = "BH") {
+melsi <- function(X, y, analysis_type = "auto", n_perms = 200, B = 30, m_frac = 0.8,
+                 show_progress = TRUE, plot_vip = TRUE, correction_method = "BH",
+                 BPPARAM = NULL) {
     
     # Validate input and ensure proper column names
     if (is.null(colnames(X)) || all(colnames(X) == "")) {
@@ -83,21 +87,21 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0
     
     if (n_groups >= 3 && analysis_type == "omnibus") {
         # Omnibus only for 3+ groups
-        return(run_omnibus_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip))
+        return(run_omnibus_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip, BPPARAM))
     }
-    
+
     if (analysis_type == "pairwise") {
         # Pairwise analysis
         if (n_groups == 2) {
             # Standard pairwise
-            return(run_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip))
+            return(run_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip, BPPARAM))
         } else {
             # All pairwise comparisons
-            return(run_all_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress, 
-                                           plot_vip, correction_method))
+            return(run_all_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress,
+                                           plot_vip, correction_method, BPPARAM))
         }
     }
-    
+
     if (analysis_type == "both") {
         # Both omnibus and pairwise
         if (show_progress) {
@@ -105,18 +109,18 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0
             message("Groups: ", paste(groups, collapse = ", "))
             message("Sample sizes: ", paste(names(table(y)), ":", table(y), collapse = ", "))
         }
-        
+
         results <- list()
-        
+
         # Run omnibus analysis
         if (show_progress) message("Running omnibus analysis...")
-        results$omnibus <- run_omnibus_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip)
-        
+        results$omnibus <- run_omnibus_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip, BPPARAM)
+
         # Run pairwise analysis
         if (show_progress) message("Running pairwise analysis...")
-        results$pairwise <- run_all_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress, 
-                                                     plot_vip, correction_method)
-        
+        results$pairwise <- run_all_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress,
+                                                     plot_vip, correction_method, BPPARAM)
+
         return(results)
     }
     
@@ -124,43 +128,54 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 75, B = 30, m_frac = 0
 }
 
 # Helper function: Run standard pairwise analysis (2 groups)
-run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_vip) {
-    
+run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_vip,
+                                  BPPARAM = NULL) {
+
     if (show_progress) {
         message("--- Starting MeLSI Analysis ---")
     }
-    
+
     # 1. Learn metric on observed data (with conservative pre-filtering)
     if (show_progress) {
         message("Learning metric on observed data...")
     }
-    
+
     # Apply conservative pre-filtering
     X_filtered <- apply_conservative_prefiltering(X, y, filter_frac = 0.7)
-    
+
     M_observed <- learn_melsi_metric_robust(X_filtered, y, B = B, m_frac = m_frac, pre_filter = FALSE)
-    
+
     dist_observed <- calculate_mahalanobis_dist_robust(X_filtered, M_observed)
     F_observed <- calculate_permanova_F(dist_observed, y)
-    
+
     # 2. Generate null distribution with CONSISTENT pre-filtering
     if (show_progress) {
         message("Generating null distribution with ", n_perms, " permutations...")
     }
-    F_null <- numeric(n_perms)
-    
-    for (p in seq_len(n_perms)) {
-        # CRITICAL: Apply same pre-filtering to permuted data
+
+    .perm_fn_pairwise <- function(p, X, y, B, m_frac) {
         y_permuted <- sample(y)
         X_filtered_perm <- apply_conservative_prefiltering(X, y_permuted, filter_frac = 0.7)
-        
         M_permuted <- learn_melsi_metric_robust(X_filtered_perm, y_permuted, B = B, m_frac = m_frac, pre_filter = FALSE)
         dist_permuted <- calculate_mahalanobis_dist_robust(X_filtered_perm, M_permuted)
-        F_null[p] <- calculate_permanova_F(dist_permuted, y_permuted)
-        
-        if (show_progress) {
-            message("  [Permutation ", p, " of ", n_perms, "]")
-            flush.console()
+        calculate_permanova_F(dist_permuted, y_permuted)
+    }
+
+    use_parallel <- !is.null(BPPARAM) && requireNamespace("BiocParallel", quietly = TRUE)
+    if (use_parallel) {
+        if (show_progress) message("Using BiocParallel for permutation testing...")
+        F_null <- BiocParallel::bplapply(seq_len(n_perms), .perm_fn_pairwise,
+                                         X = X, y = y, B = B, m_frac = m_frac,
+                                         BPPARAM = BPPARAM)
+        F_null <- unlist(F_null)
+    } else {
+        F_null <- numeric(n_perms)
+        for (p in seq_len(n_perms)) {
+            F_null[p] <- .perm_fn_pairwise(p, X, y, B, m_frac)
+            if (show_progress) {
+                message("  [Permutation ", p, " of ", n_perms, "]")
+                flush.console()
+            }
         }
     }
     
@@ -285,7 +300,8 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
 }
 
 # Helper function: Run omnibus analysis (3+ groups)
-run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_vip) {
+run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_vip,
+                                  BPPARAM = NULL) {
     
     groups <- unique(y)
     n_groups <- length(groups)
@@ -319,22 +335,32 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         message("Generating null distribution with ", n_perms, " permutations...")
     }
     
-    F_null <- numeric(n_perms)
-    
-    for (p in seq_len(n_perms)) {
+    .perm_fn_omnibus <- function(p, X, y, B, m_frac) {
         y_permuted <- sample(y)
         X_filtered_perm <- apply_conservative_prefiltering_multi(X, y_permuted, filter_frac = 0.7)
-        
         M_permuted <- learn_melsi_metric_omnibus(X_filtered_perm, y_permuted, B = B, m_frac = m_frac)
         dist_permuted <- calculate_mahalanobis_dist_robust(X_filtered_perm, M_permuted)
-        F_null[p] <- calculate_permanova_F(dist_permuted, y_permuted)
-        
-        if (show_progress) {
-            message("  [Permutation ", p, " of ", n_perms, "]")
-            flush.console()
+        calculate_permanova_F(dist_permuted, y_permuted)
+    }
+
+    use_parallel <- !is.null(BPPARAM) && requireNamespace("BiocParallel", quietly = TRUE)
+    if (use_parallel) {
+        if (show_progress) message("Using BiocParallel for permutation testing...")
+        F_null <- BiocParallel::bplapply(seq_len(n_perms), .perm_fn_omnibus,
+                                         X = X, y = y, B = B, m_frac = m_frac,
+                                         BPPARAM = BPPARAM)
+        F_null <- unlist(F_null)
+    } else {
+        F_null <- numeric(n_perms)
+        for (p in seq_len(n_perms)) {
+            F_null[p] <- .perm_fn_omnibus(p, X, y, B, m_frac)
+            if (show_progress) {
+                message("  [Permutation ", p, " of ", n_perms, "]")
+                flush.console()
+            }
         }
     }
-    
+
     # 5. Calculate p-value
     p_value <- (sum(F_null >= F_observed) + 1) / (n_perms + 1)
     
@@ -433,7 +459,8 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
 }
 
 # Helper function: Run all pairwise comparisons (3+ groups)
-run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_vip, correction_method) {
+run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_vip,
+                                      correction_method, BPPARAM = NULL) {
     
     groups <- unique(y)
     n_groups <- length(groups)
@@ -476,7 +503,8 @@ run_all_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, p
         # Run MeLSI for this pair
         pair_result <- tryCatch({
             run_pairwise_analysis(X_pair, y_pair, n_perms = n_perms, B = B, m_frac = m_frac,
-                                 show_progress = show_progress, plot_vip = FALSE)
+                                 show_progress = show_progress, plot_vip = FALSE,
+                                 BPPARAM = BPPARAM)
         }, error = function(e) {
             if (show_progress) {
                 warning("Analysis failed for ", group1, " vs ", group2, ": ", e$message)
@@ -707,14 +735,74 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
     return(M)
 }
 
-# Helper function: Learn MeLSI metric
-learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7, 
-                                     pre_filter = TRUE, 
-                                     filter_threshold = 0.1) {
+# Helper function: Ensemble metric learning with bootstrap and feature subsampling
+# Shared logic for both robust (pairwise) and omnibus (multi-group) metric learning
+.learn_ensemble_metric <- function(X, y, B, m_frac, optimizer_fn) {
     n_samples <- nrow(X)
     n_features <- ncol(X)
     m <- max(2, floor(n_features * m_frac))
-    
+
+    learned_matrices <- vector("list", B)
+    valid_count <- 0
+    f_stats <- numeric(B)
+
+    for (b in seq_len(B)) {
+        boot_indices <- sample(seq_len(n_samples), n_samples, replace = TRUE)
+        if (length(unique(y[boot_indices])) < 2) next
+
+        X_boot <- X[boot_indices, , drop = FALSE]
+        y_boot <- y[boot_indices]
+
+        feature_indices <- sample(seq_len(n_features), m, replace = FALSE)
+        X_subset <- X_boot[, feature_indices, drop = FALSE]
+
+        M_weak <- optimizer_fn(X_subset, y_boot)
+
+        M_full <- diag(n_features)
+        M_full[feature_indices, feature_indices] <- M_weak
+
+        tryCatch({
+            dist_test <- calculate_mahalanobis_dist_robust(X_subset, M_weak)
+            f_stat <- calculate_permanova_F(dist_test, y_boot)
+
+            if (is.finite(f_stat) && f_stat > 0) {
+                valid_count <- valid_count + 1
+                learned_matrices[[valid_count]] <- M_full
+                f_stats[valid_count] <- f_stat
+            }
+        }, error = function(e) {
+            # Skip this weak learner if it fails
+        })
+
+        if (valid_count >= B) break
+    }
+
+    if (valid_count == 0) {
+        warning("No valid weak learners found. Returning identity matrix.")
+        return(diag(n_features))
+    }
+
+    weights <- f_stats[seq_len(valid_count)]
+    weights <- weights / sum(weights)
+
+    M_ensemble <- matrix(0, n_features, n_features)
+    for (i in seq_len(valid_count)) {
+        M_ensemble <- M_ensemble + weights[i] * learned_matrices[[i]]
+    }
+
+    eigen_result <- eigen(M_ensemble)
+    eigen_result$values <- pmax(eigen_result$values, 1e-6)
+    M_ensemble <- eigen_result$vectors %*% diag(eigen_result$values) %*% t(eigen_result$vectors)
+
+    return(M_ensemble)
+}
+
+# Helper function: Learn MeLSI metric
+learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
+                                     pre_filter = TRUE,
+                                     filter_threshold = 0.1) {
+    n_features <- ncol(X)
+
     # Pre-filtering: Remove features with low variance or no signal
     if (pre_filter && n_features > 10) {
         # Calculate feature importance using simple t-test
@@ -723,7 +811,7 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
         if (length(classes) == 2) {
             class1_indices <- which(y == classes[1])
             class2_indices <- which(y == classes[2])
-            
+
             for (i in seq_len(n_features)) {
                 # Simple t-test for feature importance
                 tryCatch({
@@ -733,146 +821,22 @@ learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
                     feature_importance[i] <- 0
                 })
             }
-            
+
             # Keep top features
             top_features <- order(feature_importance, decreasing = TRUE)
             n_keep <- max(10, min(n_features, floor(n_features * 0.5)))
             keep_features <- top_features[seq_len(n_keep)]
-            
+
             X <- X[, keep_features, drop = FALSE]
-            n_features <- ncol(X)
-            m <- max(2, floor(n_features * m_frac))
         }
     }
-    
-    learned_matrices <- vector("list", B)
-    valid_count <- 0
-    f_stats <- numeric(B)
-    
-    for (b in seq_len(B)) {
-        # Bootstrap sampling
-        boot_indices <- sample(seq_len(n_samples), n_samples, replace = TRUE)
-        if (length(unique(y[boot_indices])) < 2) next
-        
-        X_boot <- X[boot_indices, , drop = FALSE]
-        y_boot <- y[boot_indices]
-        
-        # Feature subsampling
-        feature_indices <- sample(seq_len(n_features), m, replace = FALSE)
-        X_subset <- X_boot[, feature_indices, drop = FALSE]
-        
-        # Learn weak learner
-        M_weak <- optimize_weak_learner_robust(X_subset, y_boot)
-        
-        # Expand back to full feature space
-        M_full <- diag(n_features)
-        M_full[feature_indices, feature_indices] <- M_weak
-        
-        # Validate weak learner
-        tryCatch({
-            dist_test <- calculate_mahalanobis_dist_robust(X_subset, M_weak)
-            f_stat <- calculate_permanova_F(dist_test, y_boot)
-            
-            if (is.finite(f_stat) && f_stat > 0) {
-                valid_count <- valid_count + 1
-                learned_matrices[[valid_count]] <- M_full
-                f_stats[valid_count] <- f_stat
-            }
-        }, error = function(e) {
-            # Skip this weak learner if it fails
-        })
-        
-        if (valid_count >= B) break
-    }
-    
-    if (valid_count == 0) {
-        warning("No valid weak learners found. Returning identity matrix.")
-        return(diag(n_features))
-    }
-    
-    # Ensemble averaging with performance weighting
-    weights <- f_stats[seq_len(valid_count)]
-    weights <- weights / sum(weights)  # Normalize weights
-    
-    M_ensemble <- matrix(0, n_features, n_features)
-    for (i in seq_len(valid_count)) {
-        M_ensemble <- M_ensemble + weights[i] * learned_matrices[[i]]
-    }
-    
-    # Ensure positive definiteness
-    eigen_result <- eigen(M_ensemble)
-    eigen_result$values <- pmax(eigen_result$values, 1e-6)
-    M_ensemble <- eigen_result$vectors %*% diag(eigen_result$values) %*% t(eigen_result$vectors)
-    
-    return(M_ensemble)
+
+    .learn_ensemble_metric(X, y, B, m_frac, optimize_weak_learner_robust)
 }
 
 # Helper function: Learn omnibus metric for multi-group data
 learn_melsi_metric_omnibus <- function(X, y, B = 30, m_frac = 0.8) {
-    n_samples <- nrow(X)
-    n_features <- ncol(X)
-    m <- max(2, floor(n_features * m_frac))
-    
-    learned_matrices <- vector("list", B)
-    valid_count <- 0
-    f_stats <- numeric(B)
-    
-    for (b in seq_len(B)) {
-        # Bootstrap sampling
-        boot_indices <- sample(seq_len(n_samples), n_samples, replace = TRUE)
-        if (length(unique(y[boot_indices])) < 2) next
-        
-        X_boot <- X[boot_indices, , drop = FALSE]
-        y_boot <- y[boot_indices]
-        
-        # Feature subsampling
-        feature_indices <- sample(seq_len(n_features), m, replace = FALSE)
-        X_subset <- X_boot[, feature_indices, drop = FALSE]
-        
-        # Learn weak learner optimized for all group pairs
-        M_weak <- optimize_weak_learner_omnibus(X_subset, y_boot)
-        
-        # Expand back to full feature space
-        M_full <- diag(n_features)
-        M_full[feature_indices, feature_indices] <- M_weak
-        
-        # Validate weak learner
-        tryCatch({
-            dist_test <- calculate_mahalanobis_dist_robust(X_subset, M_weak)
-            f_stat <- calculate_permanova_F(dist_test, y_boot)
-            
-            if (is.finite(f_stat) && f_stat > 0) {
-                valid_count <- valid_count + 1
-                learned_matrices[[valid_count]] <- M_full
-                f_stats[valid_count] <- f_stat
-            }
-        }, error = function(e) {
-            # Skip this weak learner if it fails
-        })
-        
-        if (valid_count >= B) break
-    }
-    
-    if (valid_count == 0) {
-        warning("No valid weak learners found. Returning identity matrix.")
-        return(diag(n_features))
-    }
-    
-    # Ensemble averaging with performance weighting
-    weights <- f_stats[seq_len(valid_count)]
-    weights <- weights / sum(weights)
-    
-    M_ensemble <- matrix(0, n_features, n_features)
-    for (i in seq_len(valid_count)) {
-        M_ensemble <- M_ensemble + weights[i] * learned_matrices[[i]]
-    }
-    
-    # Ensure positive definiteness
-    eigen_result <- eigen(M_ensemble)
-    eigen_result$values <- pmax(eigen_result$values, 1e-6)
-    M_ensemble <- eigen_result$vectors %*% diag(eigen_result$values) %*% t(eigen_result$vectors)
-    
-    return(M_ensemble)
+    .learn_ensemble_metric(X, y, B, m_frac, optimize_weak_learner_omnibus)
 }
 
 # Helper function: Optimize weak learner for omnibus analysis
@@ -976,11 +940,6 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
         stop("feature_weights is empty")
     }
     
-    # Load required packages
-    if (!requireNamespace("ggplot2", quietly = TRUE)) {
-        stop("ggplot2 package is required for plotting. Please install it with: install.packages('ggplot2')")
-    }
-    
     # Sort features by weight
     sorted_weights <- sort(feature_weights, decreasing = TRUE)
     
@@ -1031,8 +990,24 @@ plot_feature_importance <- function(feature_weights, top_n = 8, main_title = NUL
             directionality_colors <- ifelse(directionality_labels == unique_groups[1], 
                                            "#E63946",  # Red for group 1
                                            "#457B9D")  # Blue for group 2
+        } else if (length(unique_groups) >= 3) {
+            # Three or more groups - assign distinct colors
+            # Use a color palette that works well for 3+ groups
+            group_colors <- c("#E63946", "#457B9D", "#F77F00", "#06A77D", "#7209B7", "#A8DADC")
+            # Cycle through colors if more than 6 groups
+            color_map <- stats::setNames(
+                group_colors[seq_len(min(length(unique_groups), length(group_colors)))],
+                unique_groups[seq_len(min(length(unique_groups), length(group_colors)))]
+            )
+            # If more groups than colors, cycle
+            if (length(unique_groups) > length(group_colors)) {
+                remaining <- unique_groups[(length(group_colors) + 1):length(unique_groups)]
+                extra_colors <- rep(group_colors, length.out = length(remaining))
+                color_map <- c(color_map, stats::setNames(extra_colors, remaining))
+            }
+            directionality_colors <- color_map[directionality_labels]
         } else {
-            # More than 2 groups or missing - use default color
+            # Single group or missing - use default color
             directionality_colors <- rep("steelblue", length(directionality_labels))
         }
     }
@@ -1196,14 +1171,9 @@ plot_vip <- function(melsi_results, top_n = 15, title = NULL, directionality = T
 #' @export
 plot_pcoa <- function(melsi_results, X, y, title = "PCoA using MeLSI Distance") {
     
-    # Load required packages
-    if (!requireNamespace("ggplot2", quietly = TRUE)) {
-        stop("ggplot2 package is required for plotting. Please install it with: install.packages('ggplot2')")
-    }
-    
     # Check if results has distance matrix
     if (is.null(melsi_results$distance_matrix)) {
-        stop("No distance matrix found in results. Calculating from metric matrix...")
+        stop("No distance matrix found in results.")
     }
     
     dist_matrix <- melsi_results$distance_matrix

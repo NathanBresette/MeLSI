@@ -51,30 +51,17 @@ MeLSI depends on the following R packages (automatically installed):
 **Optional Dependencies:**
 - `phyloseq` - Microbiome data structures (via BiocManager)
 - `microbiome` - Microbiome analysis tools (via BiocManager)
-- `devtools` - For GitHub installation
-- `BiocManager` - For Bioconductor packages
+- `BiocParallel` - For parallel permutation testing
 
 ## Installation
 
-MeLSI can be installed from GitHub using devtools:
+MeLSI can be installed from Bioconductor:
 
 ```r
-# Install devtools if not already installed
-if (!require("devtools", quietly = TRUE))
-    install.packages("devtools")
-
-# Install required packages first
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-# Install Bioconductor packages
-BiocManager::install(c("phyloseq", "microbiome"))
-
-# Install CRAN packages
-install.packages(c("vegan", "ggplot2"))
-
-# Install MeLSI from GitHub
-devtools::install_github("NathanBresette/MeLSI")
+BiocManager::install("MeLSI")
 ```
 
 After installation, load the package:
@@ -389,6 +376,10 @@ If you use MeLSI in your research, please cite:
   doi={10.5281/zenodo.17714848}
 }
 ```
+
+## Funding
+
+This work was supported by NIH/NIA R56AG079586.
 
 ## License
 

@@ -8,12 +8,13 @@ melsi(
   X,
   y,
   analysis_type = "auto",
-  n_perms = 75,
+  n_perms = 200,
   B = 30,
   m_frac = 0.8,
   show_progress = TRUE,
   plot_vip = TRUE,
-  correction_method = "BH"
+  correction_method = "BH",
+  BPPARAM = NULL
 )
 }
 \arguments{
@@ -27,7 +28,7 @@ melsi(
 - "omnibus": Global analysis for 3+ groups (requires at least 3 groups)
 - "both": Both omnibus and pairwise for 3+ groups}
 
-\item{n_perms}{Number of permutations for p-value calculation (default: 75)}
+\item{n_perms}{Number of permutations for p-value calculation (default: 200)}
 
 \item{B}{Number of weak learners in the ensemble (default: 30)}
 
@@ -38,6 +39,10 @@ melsi(
 \item{plot_vip}{Whether to display Variable Importance Plot (default: TRUE)}
 
 \item{correction_method}{Multiple testing correction method for pairwise comparisons (default: "BH")}
+
+\item{BPPARAM}{A \code{\link[BiocParallel]{BiocParallelParam}} object specifying the
+parallel backend to use for permutation testing. If \code{NULL} (default),
+permutations run sequentially. Requires the \pkg{BiocParallel} package.}
 }
 \value{
 For 2 groups or pairwise analysis: List with F-statistic, p-value, feature weights, etc.
