@@ -3,6 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![R](https://img.shields.io/badge/R-4.0+-blue.svg)](https://www.r-project.org/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17714848.svg)](https://doi.org/10.5281/zenodo.17714848)
+[![BioC devel](https://bioconductor.org/shields/build/devel/bioc/MeLSI.svg)](https://bioconductor.org/checkResults/devel/bioc-LATEST/MeLSI/)
+[![BioC release](https://bioconductor.org/shields/availability/release/MeLSI.svg)](https://bioconductor.org/packages/MeLSI/)
+[![Downloads](https://bioconductor.org/shields/downloads/release/MeLSI.svg)](https://bioconductor.org/packages/MeLSI/)
 
 ## Overview
 
