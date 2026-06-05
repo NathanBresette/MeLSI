@@ -1,3 +1,10 @@
+# MeLSI 1.1.3
+
+- Performance: additional ~22% speedup via diagonal vector storage in ensemble
+  aggregation (eliminates B x p^2 matrix allocation per permutation) and
+  rejection sampling in gradient optimizer (eliminates setdiff() allocation
+  per iteration). Combined with 1.1.2, total speedup is ~2.9x over 1.1.1.
+
 # MeLSI 1.1.2
 
 - Performance: 2.3x faster permutation testing via vectorized prefiltering, direct

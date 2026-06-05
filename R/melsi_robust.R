@@ -674,10 +674,10 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
     for (iter in seq_len(n_iterations)) {
         # Sample one pair from each class (simpler but still effective)
         i1 <- sample(class1_indices, 1)
-        j1 <- sample(setdiff(class1_indices, i1), 1)
+        j1 <- class1_indices[class1_indices != i1][[sample.int(length(class1_indices) - 1L, 1)]]
         i2 <- sample(class2_indices, 1)
-        j2 <- sample(setdiff(class2_indices, i2), 1)
-        
+        j2 <- class2_indices[class2_indices != i2][[sample.int(length(class2_indices) - 1L, 1)]]
+
         # Compute differences
         diff1 <- X[i1, ] - X[j1, ]  # Within class 1
         diff2 <- X[i2, ] - X[j2, ]  # Within class 2
@@ -738,16 +738,16 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
 
         M_weak <- optimizer_fn(X_subset, y_boot)
 
-        M_full <- diag(n_features)
-        M_full[feature_indices, feature_indices] <- M_weak
-
         tryCatch({
             dist_test <- calculate_mahalanobis_dist_robust(X_subset, M_weak)
             f_stat <- calculate_permanova_F(dist_test, y_boot)
 
             if (is.finite(f_stat) && f_stat > 0) {
                 valid_count <- valid_count + 1
-                learned_matrices[[valid_count]] <- M_full
+                # Store only the diagonal (M is always diagonal); identity (1) elsewhere
+                diag_full <- rep(1, n_features)
+                diag_full[feature_indices] <- diag(M_weak)
+                learned_matrices[[valid_count]] <- diag_full
                 f_stats[valid_count] <- f_stat
             }
         }, error = function(e) {
@@ -765,11 +765,10 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
     weights <- f_stats[seq_len(valid_count)]
     weights <- weights / sum(weights)
 
-    # All learned matrices are diagonal; aggregate diagonals directly to avoid
-    # full matrix ops and a redundant O(p^3) eigen decomposition.
+    # learned_matrices holds diagonal vectors; weighted sum directly
     diag_ensemble <- numeric(n_features)
     for (i in seq_len(valid_count)) {
-        diag_ensemble <- diag_ensemble + weights[i] * diag(learned_matrices[[i]])
+        diag_ensemble <- diag_ensemble + weights[i] * learned_matrices[[i]]
     }
     return(diag(pmax(diag_ensemble, 1e-6)))
 }
@@ -847,9 +846,9 @@ optimize_weak_learner_omnibus <- function(X, y, n_iterations = 50, learning_rate
         
         # Sample from selected pair (same as pairwise optimization)
         i1 <- sample(group1_indices, 1)
-        j1 <- sample(setdiff(group1_indices, i1), 1)
+        j1 <- group1_indices[group1_indices != i1][[sample.int(length(group1_indices) - 1L, 1)]]
         i2 <- sample(group2_indices, 1)
-        j2 <- sample(setdiff(group2_indices, i2), 1)
+        j2 <- group2_indices[group2_indices != i2][[sample.int(length(group2_indices) - 1L, 1)]]
         
         # Compute differences
         diff1 <- X[i1, ] - X[j1, ]  # Within group 1
