@@ -219,8 +219,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         # Calculate fold change and log2 fold change
         # Add small epsilon to both to avoid division issues and ensure positive values for log2
         fold_change <- (mean_group1 + 1e-10) / (mean_group2 + 1e-10)
-        log2_fold_change <- log2(fold_change)
-        # Replace any NaN or Inf values with 0
+        log2_fold_change <- suppressWarnings(log2(fold_change))
         log2_fold_change[!is.finite(log2_fold_change)] <- 0
         names(log2_fold_change) <- colnames(X_filtered)
         
@@ -276,9 +275,6 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         })
     }
     
-    # Calculate distance matrix for PCoA plotting
-    distance_matrix <- calculate_mahalanobis_dist_robust(X_filtered, M_observed)
-    
     # Return results - directionality should always be included for 2-group analysis
     # (will be NULL for multi-group, but should be a named vector for 2 groups)
     return(list(
@@ -290,7 +286,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         mean_abundances = mean_abundances,
         log2_fold_change = log2_fold_change,
         metric_matrix = M_observed,
-        distance_matrix = distance_matrix,  # For PCoA plotting
+        distance_matrix = dist_observed,  # reuse already-computed dist
         diagnostics = list(
             n_features_used = ncol(X_filtered),
             n_permutations = n_perms,
@@ -433,9 +429,6 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         })
     }
     
-    # Calculate distance matrix for PCoA plotting
-    distance_matrix <- calculate_mahalanobis_dist_robust(X_filtered, M_observed)
-    
     return(list(
         F_observed = F_observed,
         p_value = p_value,
@@ -444,7 +437,7 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         directionality = directionality_info,
         mean_abundances = mean_abundances,
         metric_matrix = M_observed,
-        distance_matrix = distance_matrix,  # For PCoA plotting
+        distance_matrix = dist_observed,  # reuse already-computed dist
         group_info = list(
             groups = groups,
             n_groups = n_groups,
@@ -576,25 +569,13 @@ apply_conservative_prefiltering <- function(X, y, filter_frac = 0.7) {
     class2_indices <- which(y == classes[2])
     
     # Calculate feature importance with more conservative approach
-    feature_importance <- numeric(ncol(X))
-    for (i in seq_len(ncol(X))) {
-        tryCatch({
-            # Use variance instead of t-test to be less aggressive
-            group1_var <- var(X[class1_indices, i])
-            group2_var <- var(X[class2_indices, i])
-            group1_mean <- mean(X[class1_indices, i])
-            group2_mean <- mean(X[class2_indices, i])
-            
-            # Combine mean difference and variance for importance
-            mean_diff <- abs(group1_mean - group2_mean)
-            # Ensure non-negative before sqrt to avoid NaN warnings
-            var_sum <- pmax(group1_var + group2_var, 0)
-            var_combined <- sqrt(var_sum)
-            feature_importance[i] <- mean_diff / (var_combined + 1e-10)
-        }, error = function(e) {
-            feature_importance[i] <- 0
-        })
-    }
+    mean_group1    <- colMeans(X[class1_indices, , drop = FALSE])
+    mean_group2    <- colMeans(X[class2_indices, , drop = FALSE])
+    var_group1     <- apply(X[class1_indices, , drop = FALSE], 2, var)
+    var_group2     <- apply(X[class2_indices, , drop = FALSE], 2, var)
+    var_combined   <- sqrt(pmax(var_group1 + var_group2, 0))
+    feature_importance <- abs(mean_group1 - mean_group2) / (var_combined + 1e-10)
+    feature_importance[!is.finite(feature_importance)] <- 0
     
     # Keep more features (70% instead of 50%)
     n_keep <- max(10, floor(ncol(X) * filter_frac))
@@ -614,19 +595,22 @@ apply_conservative_prefiltering_multi <- function(X, y, filter_frac = 0.7) {
         return(X)
     }
     
-    # Calculate feature importance using ANOVA F-statistic for multi-group data
-    feature_importance <- numeric(ncol(X))
-    
-    for (i in seq_len(ncol(X))) {
-        tryCatch({
-            # Use ANOVA F-statistic for multi-group comparison
-            aov_result <- aov(X[, i] ~ y)
-            f_stat <- summary(aov_result)[[1]][["F value"]][1]
-            feature_importance[i] <- ifelse(is.na(f_stat), 0, f_stat)
-        }, error = function(e) {
-            feature_importance[i] <- 0
-        })
+    # Calculate feature importance using vectorized one-way ANOVA F-statistic
+    grand_mean <- colMeans(X)
+    n  <- nrow(X)
+    k  <- length(classes)
+    SS_between <- numeric(ncol(X))
+    SS_within  <- numeric(ncol(X))
+    for (g in classes) {
+        idx <- which(y == g)
+        n_g <- length(idx)
+        gm  <- colMeans(X[idx, , drop = FALSE])
+        SS_between <- SS_between + n_g * (gm - grand_mean)^2
+        X_c <- sweep(X[idx, , drop = FALSE], 2, gm, "-")
+        SS_within  <- SS_within + colSums(X_c^2)
     }
+    feature_importance <- (SS_between / (k - 1)) / (SS_within / (n - k) + 1e-10)
+    feature_importance[!is.finite(feature_importance)] <- 0
     
     # Keep top features
     n_keep <- max(10, floor(ncol(X) * filter_frac))
@@ -639,33 +623,29 @@ apply_conservative_prefiltering_multi <- function(X, y, filter_frac = 0.7) {
     return(filtered_X)
 }
 
-# Helper function: Calculate PERMANOVA F-statistic
-calculate_permanova_F <- function(dist_matrix, labels) {
-    permanova_res <- vegan::adonis2(dist_matrix ~ labels, permutations = 0)
-    f_stat <- permanova_res$F[1]
-    return(f_stat)
+# Helper function: Calculate PERMANOVA F-statistic (direct formula, avoids adonis2 overhead)
+calculate_permanova_F <- function(dist_obj, labels) {
+    n  <- attr(dist_obj, "Size")
+    groups <- unique(labels)
+    k  <- length(groups)
+    D2 <- as.matrix(dist_obj)^2
+    SS_total  <- sum(D2) / (2 * n)
+    SS_within <- 0
+    for (g in groups) {
+        idx <- which(labels == g)
+        SS_within <- SS_within + sum(D2[idx, idx]) / (2 * length(idx))
+    }
+    SS_between <- SS_total - SS_within
+    (SS_between / (k - 1)) / (SS_within / (n - k))
 }
 
 # Helper function: Robust Mahalanobis Distance
+# M is always diagonal in this implementation (only diag(M) is ever modified),
+# so we skip the O(p^3) eigen decomposition and scale columns directly.
 calculate_mahalanobis_dist_robust <- function(X, M) {
-    n_samples <- nrow(X)
-    
-    # Ensure M is positive definite
-    eigen_M <- eigen(M)
-    eigen_M$values <- pmax(eigen_M$values, 1e-6)  # Ensure positive eigenvalues
-    
-    # Compute M^(-1/2) safely - handle potential NaN/Inf from sqrt
-    sqrt_eigenvals <- sqrt(eigen_M$values)
-    sqrt_eigenvals[!is.finite(sqrt_eigenvals)] <- 1e-3  # Replace NaN/Inf with small value
-    M_half_inv <- eigen_M$vectors %*% diag(1/sqrt_eigenvals) %*% t(eigen_M$vectors)
-    
-    # Transform data
-    Y <- X %*% M_half_inv
-    
-    # Compute Euclidean distances
-    dist_matrix <- as.matrix(dist(Y, method = "euclidean"))
-    
-    return(as.dist(dist_matrix))
+    w <- 1 / sqrt(pmax(diag(M), 1e-6))
+    w[!is.finite(w)] <- 1e-3
+    return(dist(sweep(X, 2, w, "*"), method = "euclidean"))
 }
 
 # Helper function: Optimize weak learner
@@ -717,9 +697,9 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
         
         # Early stopping if no improvement
         if (iter %% 20 == 0) {
-            dist_matrix <- as.matrix(dist(X %*% chol(M)))
+            dist_matrix <- dist(sweep(X, 2, sqrt(pmax(diag(M), 0)), "*"))
             current_f_stat <- tryCatch({
-                vegan::adonis2(dist_matrix ~ y, permutations = 0)$F[1]
+                calculate_permanova_F(dist_matrix, y)
             }, error = function(e) 0)
             
             if (current_f_stat <= prev_f_stat) {
@@ -785,16 +765,13 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
     weights <- f_stats[seq_len(valid_count)]
     weights <- weights / sum(weights)
 
-    M_ensemble <- matrix(0, n_features, n_features)
+    # All learned matrices are diagonal; aggregate diagonals directly to avoid
+    # full matrix ops and a redundant O(p^3) eigen decomposition.
+    diag_ensemble <- numeric(n_features)
     for (i in seq_len(valid_count)) {
-        M_ensemble <- M_ensemble + weights[i] * learned_matrices[[i]]
+        diag_ensemble <- diag_ensemble + weights[i] * diag(learned_matrices[[i]])
     }
-
-    eigen_result <- eigen(M_ensemble)
-    eigen_result$values <- pmax(eigen_result$values, 1e-6)
-    M_ensemble <- eigen_result$vectors %*% diag(eigen_result$values) %*% t(eigen_result$vectors)
-
-    return(M_ensemble)
+    return(diag(pmax(diag_ensemble, 1e-6)))
 }
 
 # Helper function: Learn MeLSI metric
@@ -856,10 +833,10 @@ optimize_weak_learner_omnibus <- function(X, y, n_iterations = 50, learning_rate
     # Track convergence
     prev_f_stat <- -Inf
     stagnation_count <- 0
-    
+    group_pairs <- combn(groups, 2, simplify = FALSE)
+
     for (iter in seq_len(n_iterations)) {
         # Sample from all group pairs (balanced sampling)
-        group_pairs <- combn(groups, 2, simplify = FALSE)
         
         # Randomly select a group pair to optimize for this iteration
         selected_pair <- sample(group_pairs, 1)[[1]]
@@ -893,9 +870,9 @@ optimize_weak_learner_omnibus <- function(X, y, n_iterations = 50, learning_rate
         
         # Early stopping check
         if (iter %% 20 == 0) {
-            dist_matrix <- as.matrix(dist(X %*% chol(M)))
+            dist_matrix <- dist(sweep(X, 2, sqrt(pmax(diag(M), 0)), "*"))
             current_f_stat <- tryCatch({
-                vegan::adonis2(dist_matrix ~ y, permutations = 0)$F[1]
+                calculate_permanova_F(dist_matrix, y)
             }, error = function(e) 0)
             
             if (current_f_stat <= prev_f_stat) {

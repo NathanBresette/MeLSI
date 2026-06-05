@@ -1,3 +1,11 @@
+# MeLSI 1.1.2
+
+- Performance: 2.3x faster permutation testing via vectorized prefiltering, direct
+  PERMANOVA F-statistic (replacing adonis2 overhead), and diagonal metric matrix
+  optimization (replacing O(p^3) eigen decomposition with O(p) column scaling).
+  Results are numerically identical; p-values unchanged.
+- Suppress spurious NaN warnings from log2 fold-change on CLR-transformed data.
+
 # MeLSI 0.99.9
 
 - Lower minimum R dependency to R >= 4.5.0 to match Bioconductor 3.23 build system
