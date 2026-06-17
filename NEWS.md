@@ -1,3 +1,18 @@
+# MeLSI 1.1.6
+
+- Performance: the PERMANOVA pseudo-F statistic is now computed by a fused C++
+  kernel (`src/melsi_fstat.cpp`, via Rcpp) that accumulates squared distances in
+  a single pass over sample pairs, instead of materialising and squaring the
+  full n x n distance matrix in R. This speeds up the F-statistic by ~4x and the
+  overall analysis by roughly 1.3-2.2x (most for two-group / pairwise analyses),
+  and composes multiplicatively with `BPPARAM` parallelism.
+- Numerical note: results are statistically equivalent but not bit-identical to
+  1.1.5. Computing squared distances directly (no sqrt round-trip) and summing in
+  a different order changes F-statistics at the ~1e-12 relative level. Across
+  extensive testing no permutation p-value changed; in rare boundary cases a
+  p-value could differ by a single permutation step (1/(n_perms+1)). Set a
+  larger `n_perms` if exact reproducibility of borderline p-values matters.
+
 # MeLSI 1.1.5
 
 - Dependencies: `vegan` moved from Imports to Suggests. The package computes the

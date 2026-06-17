@@ -23,18 +23,23 @@ double melsi_permanova_f(const NumericMatrix& Xt, const IntegerVector& group, in
     const int m = Xt.nrow();
     const int n = Xt.ncol();
 
-    std::vector<long double> within(k, 0.0L);
+    // Plain double accumulators (not long double): on x86-64 long double is
+    // 80-bit x87, which is slow and prevents SIMD vectorisation of the inner
+    // loop. Summing O(n^2) similar-magnitude positive terms in double keeps the
+    // relative error at ~1e-14, well within the tolerance the equivalence tests
+    // confirmed.
+    std::vector<double> within(k, 0.0);
     std::vector<int> nsize(k, 0);
     for (int i = 0; i < n; ++i) nsize[group[i]]++;
 
     const double* x = &Xt[0];           // column-major: sample i starts at x + i*m
-    long double total = 0.0L;
+    double total = 0.0;
 
     for (int i = 0; i < n; ++i) {
-        const double* xi = x + (std::size_t)i * m;
+        const double* __restrict xi = x + (std::size_t)i * m;
         const int gi = group[i];
         for (int j = i + 1; j < n; ++j) {
-            const double* xj = x + (std::size_t)j * m;
+            const double* __restrict xj = x + (std::size_t)j * m;
             double s = 0.0;
             for (int d = 0; d < m; ++d) {
                 const double diff = xi[d] - xj[d];
@@ -45,13 +50,13 @@ double melsi_permanova_f(const NumericMatrix& Xt, const IntegerVector& group, in
         }
     }
 
-    const long double SS_total = total / (long double)n;
-    long double SS_within = 0.0L;
+    const double SS_total = total / (double)n;
+    double SS_within = 0.0;
     for (int g = 0; g < k; ++g) {
-        if (nsize[g] > 0) SS_within += within[g] / (long double)nsize[g];
+        if (nsize[g] > 0) SS_within += within[g] / (double)nsize[g];
     }
-    const long double SS_between = SS_total - SS_within;
-    const long double F = (SS_between / (long double)(k - 1)) /
-                          (SS_within / (long double)(n - k));
-    return (double)F;
+    const double SS_between = SS_total - SS_within;
+    const double F = (SS_between / (double)(k - 1)) /
+                     (SS_within / (double)(n - k));
+    return F;
 }
