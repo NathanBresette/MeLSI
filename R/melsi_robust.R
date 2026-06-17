@@ -115,6 +115,14 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 200, B = 30, m_frac = 
     # Optional reproducibility: set the RNG seed when supplied (no-op otherwise).
     if (!is.null(seed)) set.seed(seed)
 
+    # Validate that labels match the number of samples (rows of X). The C++
+    # F-statistic kernel indexes the label vector by sample, so a length
+    # mismatch must be caught here rather than reaching native code.
+    if (length(y) != nrow(X)) {
+        stop("length(y) (", length(y), ") must equal the number of rows (samples) in X (",
+             nrow(X), ").")
+    }
+
     # Validate input and ensure proper column names
     if (is.null(colnames(X)) || all(colnames(X) == "")) {
         colnames(X) <- paste0("Feature_", seq_len(ncol(X)))
@@ -122,7 +130,7 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 200, B = 30, m_frac = 
             warning("Input data has no column names. Using generic feature names.")
         }
     }
-    
+
     groups <- unique(y)
     n_groups <- length(groups)
     
@@ -686,6 +694,10 @@ apply_conservative_prefiltering_multi <- function(X, y, filter_frac = 0.7) {
 # matrix; used in the hot paths where only the F-statistic (not the distance
 # matrix) is needed.
 .melsi_F_scaled <- function(Xs, labels) {
+    # Guard the native boundary: the kernel indexes labels by sample.
+    if (length(labels) != nrow(Xs)) {
+        stop("Internal error: label length does not match number of samples.")
+    }
     g <- match(labels, unique(labels)) - 1L
     melsi_permanova_f(t(Xs), as.integer(g), length(unique(labels)))
 }
