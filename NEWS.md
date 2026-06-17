@@ -1,3 +1,12 @@
+# MeLSI 1.1.4
+
+- Documentation: document the `BPPARAM` argument to `melsi()` for parallel
+  permutation testing. The argument has been available since the move to a
+  `BiocParallel` backend; this release adds a worked example to the README and
+  vignette and surfaces it in NEWS. Pass any `BiocParallelParam` object (for
+  example `MulticoreParam(workers = 8)`) to distribute the permutation loop
+  across cores; the default (`NULL`) runs permutations sequentially.
+
 # MeLSI 1.1.3
 
 - Performance: additional ~22% speedup via diagonal vector storage in ensemble

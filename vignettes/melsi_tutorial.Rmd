@@ -198,6 +198,33 @@ cat(sprintf("Custom MeLSI F-statistic value: %.4f (p = %.4f)\n",
 - `B`: Default 30 is usually sufficient; increase to 50-100 for more stability (vignette uses 20 for speed)
 - `m_frac`: Default 0.8 works well; lower values (0.6-0.7) can help with very high-dimensional data
 
+## Parallel Permutation Testing
+
+Permutation testing dominates the runtime of a MeLSI analysis, and the
+permutations are independent of one another. To run them in parallel, pass a
+`BiocParallelParam` object from the `BiocParallel` package via the `BPPARAM`
+argument:
+
+```{r parallel_usage, eval=FALSE}
+library(BiocParallel)
+
+# Distribute the permutation loop across 4 worker cores (macOS/Linux)
+parallel_results <- melsi(
+    X_clr, y,
+    n_perms = 200,
+    BPPARAM = MulticoreParam(workers = 4)
+)
+
+# On Windows, use SnowParam instead:
+# parallel_results <- melsi(X_clr, y, n_perms = 200,
+#                           BPPARAM = SnowParam(workers = 4))
+```
+
+When `BPPARAM` is left at its default (`NULL`), permutations run sequentially.
+Parallel execution is supported for omnibus, pairwise, and multi-group analyses
+and produces identical results to the sequential path. This example is disabled
+(`eval=FALSE`) so the vignette stays within the Bioconductor build time limit.
+
 ## Working with Bioconductor Packages
 
 ### Integration with phyloseq
