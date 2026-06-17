@@ -13,7 +13,9 @@ BugReports: https://github.com/NathanBresette/MeLSI/issues
 Imports:
     ggplot2,
     stats,
-    utils
+    utils,
+    Rcpp
+LinkingTo: Rcpp
 Suggests:
     testthat,
     knitr,

@@ -87,6 +87,8 @@ print.melsi <- function(x, top_n = 5, ...) {
 #' @importFrom stats var dist p.adjust rpois setNames
 #' @importFrom utils combn
 #' @import ggplot2
+#' @importFrom Rcpp evalCpp
+#' @useDynLib MeLSI, .registration = TRUE
 #'
 #' @examples
 #' # Generate test data
@@ -206,7 +208,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     M_observed <- learn_melsi_metric_robust(X_filtered, y, B = B, m_frac = m_frac)
 
     dist_observed <- calculate_mahalanobis_dist_robust(X_filtered, M_observed)
-    F_observed <- calculate_permanova_F(dist_observed, y)
+    F_observed <- .melsi_F_scaled(.melsi_scale_mahal(X_filtered, M_observed), y)
 
     # 2. Generate null distribution with CONSISTENT pre-filtering
     if (show_progress) {
@@ -217,8 +219,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         y_permuted <- sample(y)
         X_filtered_perm <- apply_conservative_prefiltering(X, y_permuted, filter_frac = 0.7)
         M_permuted <- learn_melsi_metric_robust(X_filtered_perm, y_permuted, B = B, m_frac = m_frac)
-        dist_permuted <- calculate_mahalanobis_dist_robust(X_filtered_perm, M_permuted)
-        calculate_permanova_F(dist_permuted, y_permuted)
+        .melsi_F_scaled(.melsi_scale_mahal(X_filtered_perm, M_permuted), y_permuted)
     }
 
     use_parallel <- !is.null(BPPARAM) && requireNamespace("BiocParallel", quietly = TRUE)
@@ -383,7 +384,7 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
     
     # 3. Calculate omnibus F-statistic
     dist_observed <- calculate_mahalanobis_dist_robust(X_filtered, M_observed)
-    F_observed <- calculate_permanova_F(dist_observed, y)
+    F_observed <- .melsi_F_scaled(.melsi_scale_mahal(X_filtered, M_observed), y)
     
     # 4. Generate null distribution
     if (show_progress) {
@@ -394,8 +395,7 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         y_permuted <- sample(y)
         X_filtered_perm <- apply_conservative_prefiltering_multi(X, y_permuted, filter_frac = 0.7)
         M_permuted <- learn_melsi_metric_omnibus(X_filtered_perm, y_permuted, B = B, m_frac = m_frac)
-        dist_permuted <- calculate_mahalanobis_dist_robust(X_filtered_perm, M_permuted)
-        calculate_permanova_F(dist_permuted, y_permuted)
+        .melsi_F_scaled(.melsi_scale_mahal(X_filtered_perm, M_permuted), y_permuted)
     }
 
     use_parallel <- !is.null(BPPARAM) && requireNamespace("BiocParallel", quietly = TRUE)
@@ -681,6 +681,23 @@ apply_conservative_prefiltering_multi <- function(X, y, filter_frac = 0.7) {
     return(filtered_X)
 }
 
+# Helper function: PERMANOVA F-statistic from an already-scaled data matrix,
+# via the fused C++ kernel. Avoids building and squaring the full n x n distance
+# matrix; used in the hot paths where only the F-statistic (not the distance
+# matrix) is needed.
+.melsi_F_scaled <- function(Xs, labels) {
+    g <- match(labels, unique(labels)) - 1L
+    melsi_permanova_f(t(Xs), as.integer(g), length(unique(labels)))
+}
+
+# Apply the Mahalanobis column scaling (matches calculate_mahalanobis_dist_robust)
+# without forming a distance object.
+.melsi_scale_mahal <- function(X, M) {
+    w <- 1 / sqrt(pmax(diag(M), 1e-6))
+    w[!is.finite(w)] <- 1e-3
+    sweep(X, 2, w, "*")
+}
+
 # Helper function: Calculate PERMANOVA F-statistic (direct formula, avoids adonis2 overhead)
 calculate_permanova_F <- function(dist_obj, labels) {
     n  <- attr(dist_obj, "Size")
@@ -755,9 +772,8 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
         
         # Early stopping if no improvement
         if (iter %% 20 == 0) {
-            dist_matrix <- dist(sweep(X, 2, sqrt(pmax(diag(M), 0)), "*"))
             current_f_stat <- tryCatch({
-                calculate_permanova_F(dist_matrix, y)
+                .melsi_F_scaled(sweep(X, 2, sqrt(pmax(diag(M), 0)), "*"), y)
             }, error = function(e) 0)
             
             if (current_f_stat <= prev_f_stat) {
@@ -797,8 +813,7 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
         M_weak <- optimizer_fn(X_subset, y_boot)
 
         tryCatch({
-            dist_test <- calculate_mahalanobis_dist_robust(X_subset, M_weak)
-            f_stat <- calculate_permanova_F(dist_test, y_boot)
+            f_stat <- .melsi_F_scaled(.melsi_scale_mahal(X_subset, M_weak), y_boot)
 
             if (is.finite(f_stat) && f_stat > 0) {
                 valid_count <- valid_count + 1
@@ -897,9 +912,8 @@ optimize_weak_learner_omnibus <- function(X, y, n_iterations = 50, learning_rate
         
         # Early stopping check
         if (iter %% 20 == 0) {
-            dist_matrix <- dist(sweep(X, 2, sqrt(pmax(diag(M), 0)), "*"))
             current_f_stat <- tryCatch({
-                calculate_permanova_F(dist_matrix, y)
+                .melsi_F_scaled(sweep(X, 2, sqrt(pmax(diag(M), 0)), "*"), y)
             }, error = function(e) 0)
             
             if (current_f_stat <= prev_f_stat) {
