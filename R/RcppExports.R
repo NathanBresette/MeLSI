@@ -5,3 +5,7 @@ melsi_permanova_f <- function(Xt, group, k) {
     .Call(`_MeLSI_melsi_permanova_f`, Xt, group, k)
 }
 
+melsi_opt_weak_learner <- function(X, g, k, n_iterations = 50L, learning_rate = 0.1) {
+    .Call(`_MeLSI_melsi_opt_weak_learner`, X, g, k, n_iterations, learning_rate)
+}
+

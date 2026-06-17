@@ -23,9 +23,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// melsi_opt_weak_learner
+NumericVector melsi_opt_weak_learner(const NumericMatrix& X, const IntegerVector& g, int k, int n_iterations, double learning_rate);
+RcppExport SEXP _MeLSI_melsi_opt_weak_learner(SEXP XSEXP, SEXP gSEXP, SEXP kSEXP, SEXP n_iterationsSEXP, SEXP learning_rateSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type g(gSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    Rcpp::traits::input_parameter< int >::type n_iterations(n_iterationsSEXP);
+    Rcpp::traits::input_parameter< double >::type learning_rate(learning_rateSEXP);
+    rcpp_result_gen = Rcpp::wrap(melsi_opt_weak_learner(X, g, k, n_iterations, learning_rate));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_MeLSI_melsi_permanova_f", (DL_FUNC) &_MeLSI_melsi_permanova_f, 3},
+    {"_MeLSI_melsi_opt_weak_learner", (DL_FUNC) &_MeLSI_melsi_opt_weak_learner, 5},
     {NULL, NULL, 0}
 };
 

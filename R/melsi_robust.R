@@ -737,68 +737,19 @@ calculate_mahalanobis_dist_robust <- function(X, M) {
 
 # Helper function: Optimize weak learner
 optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate = 0.1) {
-    n_samples <- nrow(X)
     n_features <- ncol(X)
-    
-    # Start with identity matrix
-    M <- diag(n_features)
-    
-    # Get class information
-    classes <- unique(y)
-    if (length(classes) < 2) return(M)
-    
-    class1_indices <- which(y == classes[1])
-    class2_indices <- which(y == classes[2])
-    
-    if (length(class1_indices) < 2 || length(class2_indices) < 2) return(M)
-    
-    # Track convergence for early stopping
-    prev_f_stat <- -Inf
-    stagnation_count <- 0
-    max_stagnation <- 20
-    
-    # Simplified but improved gradient descent
-    for (iter in seq_len(n_iterations)) {
-        # Sample one pair from each class (simpler but still effective)
-        i1 <- sample(class1_indices, 1)
-        j1 <- class1_indices[class1_indices != i1][[sample.int(length(class1_indices) - 1L, 1)]]
-        i2 <- sample(class2_indices, 1)
-        j2 <- class2_indices[class2_indices != i2][[sample.int(length(class2_indices) - 1L, 1)]]
 
-        # Compute differences
-        diff1 <- X[i1, ] - X[j1, ]  # Within class 1
-        diff2 <- X[i2, ] - X[j2, ]  # Within class 2
-        diff3 <- X[i1, ] - X[i2, ]  # Between classes
-        
-        # Vectorized gradient calculation (the key improvement!)
-        grad_between <- diff3^2
-        grad_within <- -(diff1^2 + diff2^2) / 2
-        total_gradient <- grad_between + grad_within
-        
-        # Adaptive learning rate
-        current_learning_rate <- learning_rate * (1 / (1 + iter * 0.1))
-        
-        # Vectorized update (much faster than the old for loop!)
-        diag(M) <- diag(M) + current_learning_rate * total_gradient
-        diag(M) <- pmax(diag(M), 0.01)  # Keep positive
-        
-        # Early stopping if no improvement
-        if (iter %% 20 == 0) {
-            current_f_stat <- tryCatch({
-                .melsi_F_scaled(sweep(X, 2, sqrt(pmax(diag(M), 0)), "*"), y)
-            }, error = function(e) 0)
-            
-            if (current_f_stat <= prev_f_stat) {
-                stagnation_count <- stagnation_count + 1
-                if (stagnation_count >= 5) break
-            } else {
-                stagnation_count <- 0
-            }
-            prev_f_stat <- current_f_stat
-        }
-    }
-    
-    return(M)
+    # Diagonal-metric gradient descent in C++ (melsi_opt_weak_learner). The C++
+    # loop draws its within/between pairs with R's own index sampler, so it
+    # consumes the global RNG identically to the previous pure-R loop and returns
+    # a bit-identical diagonal. Group ids match the R reference: g == 0 is
+    # unique(y)[1] (class 1), g == 1 is unique(y)[2] (class 2); the early-stopping
+    # F statistic uses all groups. Guards (k < 2, class size < 2) are handled in
+    # C++ and return the identity diagonal, matching the old return(diag(...)).
+    g <- match(y, unique(y)) - 1L
+    k <- length(unique(y))
+    diag_M <- melsi_opt_weak_learner(X, as.integer(g), k, n_iterations, learning_rate)
+    diag(pmax(diag_M, 0.01))
 }
 
 # Helper function: Ensemble metric learning with bootstrap and feature subsampling

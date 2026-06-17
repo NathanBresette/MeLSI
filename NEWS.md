@@ -1,3 +1,17 @@
+# MeLSI 1.1.7
+
+- Performance: the weak-learner metric optimizer (`optimize_weak_learner_robust`,
+  the hot path of ensemble metric learning) is now a C++ kernel
+  (`melsi_opt_weak_learner` in `src/melsi_fstat.cpp`, via Rcpp). Profiling showed
+  this gradient-descent loop accounted for ~83% of total runtime; the C++ port
+  runs it ~4.6x faster, for roughly ~2x end-to-end speedup, composing with the
+  1.1.6 F-statistic kernel and `BPPARAM` parallelism.
+- Reproducibility: results are bit-faithful to the R implementation. The C++
+  loop draws its within/between-class pairs with R's own index sampler
+  (`R_unif_index`), so it consumes the global RNG stream identically to the
+  previous `sample()`-based loop. End-to-end F-statistics reproduce 1.1.6 to
+  floating-point precision (~1e-15 relative) with no p-value changes.
+
 # MeLSI 1.1.6
 
 - Performance: the PERMANOVA pseudo-F statistic is now computed by a fused C++
