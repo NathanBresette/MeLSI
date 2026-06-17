@@ -1,6 +1,60 @@
 # Consolidated MeLSI Analysis Function
 # Handles both pairwise (2 groups) and multi-group (3+ groups) analysis
 
+# Tag a results list with the "melsi" S3 class without altering its contents,
+# so existing `$` access keeps working and a tidy print method is available.
+.as_melsi <- function(x) {
+    if (!inherits(x, "melsi")) class(x) <- c("melsi", class(x))
+    x
+}
+
+#' Print method for MeLSI results
+#'
+#' Concise summary of a \code{\link{melsi}} result: the F-statistic, p-value,
+#' and the top features by learned weight.
+#'
+#' @param x An object of class \code{"melsi"} returned by \code{\link{melsi}}.
+#' @param top_n Number of top features to display (default: 5).
+#' @param ... Ignored; present for S3 method consistency.
+#'
+#' @return \code{x}, invisibly.
+#'
+#' @examples
+#' test_data <- generate_test_data(n_samples = 40, n_taxa = 50, n_signal_taxa = 5)
+#' X_clr <- clr_transform(test_data$counts)
+#' results <- melsi(X_clr, test_data$metadata$Group, n_perms = 19, B = 10,
+#'                  show_progress = FALSE, plot_vip = FALSE)
+#' print(results)
+#'
+#' @export
+print.melsi <- function(x, top_n = 5, ...) {
+    if (!is.null(x$omnibus) || !is.null(x$pairwise)) {
+        cat("MeLSI multi-group analysis\n")
+        if (!is.null(x$omnibus)) {
+            cat(sprintf("  Omnibus: F = %.4f, p = %.4f\n",
+                        x$omnibus$F_observed, x$omnibus$p_value))
+        }
+        if (!is.null(x$pairwise$summary)) {
+            cat("  Pairwise comparisons:", nrow(x$pairwise$summary), "\n")
+        }
+        return(invisible(x))
+    }
+
+    cat("MeLSI analysis\n")
+    cat(sprintf("  F-statistic: %.4f\n", x$F_observed))
+    cat(sprintf("  p-value:     %.4f\n", x$p_value))
+    w <- x$feature_weights
+    if (!is.null(w) && length(w) > 0) {
+        k <- min(top_n, length(w))
+        top <- sort(w, decreasing = TRUE)[seq_len(k)]
+        cat(sprintf("  Top %d features by weight:\n", k))
+        for (i in seq_len(k)) {
+            cat(sprintf("    %s (%.4f)\n", names(top)[i], top[i]))
+        }
+    }
+    invisible(x)
+}
+
 #' Run MeLSI Analysis
 #'
 #' Performs MeLSI (Metric Learning for Statistical Inference) analysis for microbiome data.
@@ -22,13 +76,16 @@
 #' @param BPPARAM A \code{\link[BiocParallel]{BiocParallelParam}} object specifying the
 #'   parallel backend to use for permutation testing. If \code{NULL} (default),
 #'   permutations run sequentially. Requires the \pkg{BiocParallel} package.
+#' @param seed Optional integer used to set the random seed for reproducible
+#'   results. If \code{NULL} (default), the current RNG state is used unchanged.
 #'
-#' @return For 2 groups or pairwise analysis: List with F-statistic, p-value, feature weights, etc.
-#'         For 3+ groups: List containing omnibus results, pairwise results, or both.
+#' @return An object of class \code{"melsi"} (a list, so existing \code{$}
+#'         access is unchanged). For 2 groups or pairwise analysis it holds the
+#'         F-statistic, p-value, and feature weights; for 3+ groups it contains
+#'         the omnibus results, pairwise results, or both.
 #'
-#' @importFrom stats var aov as.dist dist p.adjust rpois setNames t.test
-#' @importFrom utils combn flush.console
-#' @importFrom vegan adonis2
+#' @importFrom stats var dist p.adjust rpois setNames
+#' @importFrom utils combn
 #' @import ggplot2
 #'
 #' @examples
@@ -51,8 +108,11 @@
 #' @export
 melsi <- function(X, y, analysis_type = "auto", n_perms = 200, B = 30, m_frac = 0.8,
                  show_progress = TRUE, plot_vip = TRUE, correction_method = "BH",
-                 BPPARAM = NULL) {
-    
+                 BPPARAM = NULL, seed = NULL) {
+
+    # Optional reproducibility: set the RNG seed when supplied (no-op otherwise).
+    if (!is.null(seed)) set.seed(seed)
+
     # Validate input and ensure proper column names
     if (is.null(colnames(X)) || all(colnames(X) == "")) {
         colnames(X) <- paste0("Feature_", seq_len(ncol(X)))
@@ -87,18 +147,18 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 200, B = 30, m_frac = 
     
     if (n_groups >= 3 && analysis_type == "omnibus") {
         # Omnibus only for 3+ groups
-        return(run_omnibus_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip, BPPARAM))
+        return(.as_melsi(run_omnibus_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip, BPPARAM)))
     }
 
     if (analysis_type == "pairwise") {
         # Pairwise analysis
         if (n_groups == 2) {
             # Standard pairwise
-            return(run_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip, BPPARAM))
+            return(.as_melsi(run_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress, plot_vip, BPPARAM)))
         } else {
             # All pairwise comparisons
-            return(run_all_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress,
-                                           plot_vip, correction_method, BPPARAM))
+            return(.as_melsi(run_all_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress,
+                                           plot_vip, correction_method, BPPARAM)))
         }
     }
 
@@ -121,7 +181,7 @@ melsi <- function(X, y, analysis_type = "auto", n_perms = 200, B = 30, m_frac = 
         results$pairwise <- run_all_pairwise_analysis(X, y, n_perms, B, m_frac, show_progress,
                                                      plot_vip, correction_method, BPPARAM)
 
-        return(results)
+        return(.as_melsi(results))
     }
     
     stop("Invalid analysis_type. Use 'auto', 'pairwise', 'omnibus', or 'both'.")
@@ -143,7 +203,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     # Apply conservative pre-filtering
     X_filtered <- apply_conservative_prefiltering(X, y, filter_frac = 0.7)
 
-    M_observed <- learn_melsi_metric_robust(X_filtered, y, B = B, m_frac = m_frac, pre_filter = FALSE)
+    M_observed <- learn_melsi_metric_robust(X_filtered, y, B = B, m_frac = m_frac)
 
     dist_observed <- calculate_mahalanobis_dist_robust(X_filtered, M_observed)
     F_observed <- calculate_permanova_F(dist_observed, y)
@@ -156,7 +216,7 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
     .perm_fn_pairwise <- function(p, X, y, B, m_frac) {
         y_permuted <- sample(y)
         X_filtered_perm <- apply_conservative_prefiltering(X, y_permuted, filter_frac = 0.7)
-        M_permuted <- learn_melsi_metric_robust(X_filtered_perm, y_permuted, B = B, m_frac = m_frac, pre_filter = FALSE)
+        M_permuted <- learn_melsi_metric_robust(X_filtered_perm, y_permuted, B = B, m_frac = m_frac)
         dist_permuted <- calculate_mahalanobis_dist_robust(X_filtered_perm, M_permuted)
         calculate_permanova_F(dist_permuted, y_permuted)
     }
@@ -170,15 +230,14 @@ run_pairwise_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_
         F_null <- unlist(F_null)
     } else {
         F_null <- numeric(n_perms)
+        pb <- if (show_progress) utils::txtProgressBar(min = 0, max = n_perms, style = 3) else NULL
         for (p in seq_len(n_perms)) {
             F_null[p] <- .perm_fn_pairwise(p, X, y, B, m_frac)
-            if (show_progress) {
-                message("  [Permutation ", p, " of ", n_perms, "]")
-                flush.console()
-            }
+            if (!is.null(pb)) utils::setTxtProgressBar(pb, p)
         }
+        if (!is.null(pb)) close(pb)
     }
-    
+
     # 3. Calculate p-value
     p_value <- (sum(F_null >= F_observed) + 1) / (n_perms + 1)
     
@@ -348,13 +407,12 @@ run_omnibus_analysis <- function(X, y, n_perms, B, m_frac, show_progress, plot_v
         F_null <- unlist(F_null)
     } else {
         F_null <- numeric(n_perms)
+        pb <- if (show_progress) utils::txtProgressBar(min = 0, max = n_perms, style = 3) else NULL
         for (p in seq_len(n_perms)) {
             F_null[p] <- .perm_fn_omnibus(p, X, y, B, m_frac)
-            if (show_progress) {
-                message("  [Permutation ", p, " of ", n_perms, "]")
-                flush.console()
-            }
+            if (!is.null(pb)) utils::setTxtProgressBar(pb, p)
         }
+        if (!is.null(pb)) close(pb)
     }
 
     # 5. Calculate p-value
@@ -774,39 +832,9 @@ optimize_weak_learner_robust <- function(X, y, n_iterations = 50, learning_rate 
 }
 
 # Helper function: Learn MeLSI metric
-learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7,
-                                     pre_filter = TRUE,
-                                     filter_threshold = 0.1) {
-    n_features <- ncol(X)
-
-    # Pre-filtering: Remove features with low variance or no signal
-    if (pre_filter && n_features > 10) {
-        # Calculate feature importance using simple t-test
-        feature_importance <- numeric(n_features)
-        classes <- unique(y)
-        if (length(classes) == 2) {
-            class1_indices <- which(y == classes[1])
-            class2_indices <- which(y == classes[2])
-
-            for (i in seq_len(n_features)) {
-                # Simple t-test for feature importance
-                tryCatch({
-                    test_result <- t.test(X[class1_indices, i], X[class2_indices, i])
-                    feature_importance[i] <- abs(test_result$statistic)
-                }, error = function(e) {
-                    feature_importance[i] <- 0
-                })
-            }
-
-            # Keep top features
-            top_features <- order(feature_importance, decreasing = TRUE)
-            n_keep <- max(10, min(n_features, floor(n_features * 0.5)))
-            keep_features <- top_features[seq_len(n_keep)]
-
-            X <- X[, keep_features, drop = FALSE]
-        }
-    }
-
+# Pre-filtering is handled upstream by apply_conservative_prefiltering(), so the
+# metric learner operates directly on the already-filtered feature matrix.
+learn_melsi_metric_robust <- function(X, y, B = 20, m_frac = 0.7) {
     .learn_ensemble_metric(X, y, B, m_frac, optimize_weak_learner_robust)
 }
 

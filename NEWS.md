@@ -1,3 +1,21 @@
+# MeLSI 1.1.5
+
+- Dependencies: `vegan` moved from Imports to Suggests. The package computes the
+  PERMANOVA F-statistic directly and no longer calls `vegan::adonis2()` at
+  runtime, so `vegan` (and its transitive dependencies) is no longer installed
+  for users; it is needed only to build the comparison section of the vignette.
+- Cleanup: removed unused `stats::aov`, `stats::as.dist`, and `stats::t.test`
+  imports and an unreachable t-test pre-filtering branch in the metric learner.
+  Pre-filtering is handled by `apply_conservative_prefiltering()` as before.
+- UX: permutation progress is now shown with a single progress bar instead of one
+  message per permutation.
+- UX: `melsi()` gains an optional `seed` argument for reproducible runs and now
+  returns an object of class `"melsi"` with a `print()` method summarising the
+  F-statistic, p-value, and top features. The returned object is still a list,
+  so existing `$` access is unchanged.
+- All statistical results (F-statistics, p-values, feature weights) are
+  numerically identical to 1.1.4; these changes do not alter the method.
+
 # MeLSI 1.1.4
 
 - Documentation: document the `BPPARAM` argument to `melsi()` for parallel
